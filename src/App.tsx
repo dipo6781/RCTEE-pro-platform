@@ -3,7 +3,7 @@
    Navegación por módulos, estado global, persistencia y notificaciones.
    ──────────────────────────────────────────────────────────────────────────── */
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { NAV, type SectionId } from "./data";
 import {
   DEFAULT_SETTINGS,
@@ -17,14 +17,36 @@ import {
   type Settings,
 } from "./engine";
 import { HistoryDrawer, Icon, Sidebar, TopBar } from "./chrome";
-import Dashboard from "./views/Dashboard";
-import Classic from "./views/Classic";
-import Enterprise from "./views/Enterprise";
-import Templates from "./views/Templates";
-import { Mercado, Rentables } from "./views/Intel";
-import Chatbot from "./views/Chatbot";
-import SettingsView from "./views/Settings";
 import type { CamposRCTEE, Nicho } from "./data";
+
+/* ── Carga diferida de módulos (roadmap: optimización de rendimiento) ──────── */
+const Dashboard = lazy(() => import("./views/Dashboard"));
+const Classic = lazy(() => import("./views/Classic"));
+const Enterprise = lazy(() => import("./views/Enterprise"));
+const Templates = lazy(() => import("./views/Templates"));
+const Rentables = lazy(() => import("./views/Intel").then((m) => ({ default: m.Rentables })));
+const Mercado = lazy(() => import("./views/Intel").then((m) => ({ default: m.Mercado })));
+const Chatbot = lazy(() => import("./views/Chatbot"));
+const SettingsView = lazy(() => import("./views/Settings"));
+
+/* ── Estado de carga de módulo (fallback de Suspense) ──────────────────────── */
+function ModuleLoader() {
+  return (
+    <div className="anim-pop flex min-h-[300px] flex-col items-center justify-center rounded-lg border border-dashed border-line-2 bg-surface/60 px-6 py-16">
+      <div className="flex items-center gap-3">
+        {["#e4572e", "#2e5eaa", "#0f7a55", "#d99125", "#b23a6b"].map((c, i) => (
+          <span
+            key={c}
+            className="typing-dot h-3 w-3 rounded-sm"
+            style={{ backgroundColor: c, animationDelay: `${i * 0.12}s` }}
+          />
+        ))}
+      </div>
+      <p className="mt-5 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-mist">Cargando módulo…</p>
+      <p className="mt-1 font-mono text-[10px] text-mist/70">chunk diferido · split automático por vista</p>
+    </div>
+  );
+}
 
 interface Toast {
   id: string;
@@ -213,7 +235,7 @@ export default function App() {
           onMenu={() => setMobileNav(true)}
         />
         <main key={section} className="anim-section mx-auto max-w-[1240px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
-          {view()}
+          <Suspense fallback={<ModuleLoader />}>{view()}</Suspense>
         </main>
         <footer className="border-t border-line py-5 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-mist">

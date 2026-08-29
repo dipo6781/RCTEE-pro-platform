@@ -1,5 +1,47 @@
+# ── Dependencias ──────────────────────────────────────────────────────────────
 node_modules/
-.next/
+.pnp
+.pnp.js
+
+# ── Entorno y secretos (nunca subir keys) ────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.backup
+
+# ── Build ─────────────────────────────────────────────────────────────────────
 dist/
-build/
+dist-ssr/
+*.local
+
+# ── Sistema (macOS + Windows/PowerShell) ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+Icon?
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Editores / Coder workspace ────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.tmp
+*.bak
+*.code-workspace
+.next/
+build/

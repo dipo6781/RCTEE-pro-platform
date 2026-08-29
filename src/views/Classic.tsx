@@ -13,6 +13,7 @@ import {
   download,
   qualityScore,
   scoreLabel,
+  uid,
   validateClassic,
   type HistoryItem,
   type Toggles,
@@ -77,7 +78,7 @@ export default function Classic({
     const score = Math.min(100, v.score + (toggles.cot ? 2 : 0) + (toggles.autoverif ? 2 : 0) + (toggles.neg ? 1 : 0));
     setOutput({ texto, titulo: titulo ?? texto.split("\n")[0].replace(/^#+\s*/, "").replace(/^PROMPT EMPRESARIAL — /, ""), score, formato });
     onSave({
-      id: crypto.randomUUID ? crypto.randomUUID() : `h-${Date.now()}`,
+      id: uid(),
       ts: Date.now(),
       fuente: "clasico",
       titulo: titulo ?? campos.tarea.trim().split(/[.\n]/)[0].slice(0, 64),
