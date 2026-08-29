@@ -41,6 +41,7 @@ export const NAV = [
   { id: "mercado", n: "06", label: "Mercado", desc: "Demanda, precios y señales del sector" },
   { id: "chatbot", n: "07", label: "Chatbot IA", desc: "8 personalidades especializadas, motor Groq u Ollama" },
   { id: "ajustes", n: "08", label: "Ajustes", desc: "Motor de IA, preferencias y gestión de datos" },
+  { id: "runbook", n: "09", label: "Runbook", desc: "Ejecutables manuales: testing, build, git, Supabase y Ollama" },
 ] as const;
 
 export type SectionId = (typeof NAV)[number]["id"];
@@ -1319,4 +1320,108 @@ export const MERCADO_ACTIVIDADES: Actividad[] = [
   { id: "a30", cat: "Ventas", nombre: "Matriz de precios y descuentos", prompt: "Tarea: política de descuentos para {empresa}. Contexto: descuentos del 20 % ante la primera objeción. Formato: matriz condición × descuento máximo × aprobador + alternativas sin precio." },
   { id: "a31", cat: "Ventas", nombre: "Higiene de pipeline semanal", prompt: "Tarea: ritual de limpieza de pipeline para equipo de {n_vendedores} vendedores. Contexto: 40 % de oportunidades llevan 60+ días sin avance. Formato: criterios de cierre forzado + forecast ponderado." },
   { id: "a32", cat: "Ventas", nombre: "Análisis win/loss de 20 cierres", prompt: "Tarea: entrevistar 10 ganados y 10 perdidos de {producto}. Contexto: se desconoce por qué se pierde. Formato: guion de 15 min + matriz de patrones + 3 cambios accionables al proceso." },
+];
+
+/* ── Runbook · ejecutables manuales ────────────────────────────────────────── */
+
+export interface RunbookCmd {
+  id: string;
+  cmd: string;
+  desc: string;
+  output?: string;
+  shell?: "ps" | "sql" | "bash";
+}
+export interface RunbookCat {
+  id: string;
+  n: string;
+  nombre: string;
+  icon: string;
+  hex: string;
+  desc: string;
+  cmds: RunbookCmd[];
+}
+
+export const RUNBOOK: RunbookCat[] = [
+  {
+    id: "setup",
+    n: "01",
+    nombre: "Configuración",
+    icon: "ajustes",
+    hex: "#e4572e",
+    desc: "Dependencias, scripts de testing y variables de entorno.",
+    cmds: [
+      { id: "s1", shell: "ps", cmd: "npm install", desc: "Instala todas las dependencias del proyecto.", output: "added N packages, and audited N packages" },
+      { id: "s2", shell: "ps", cmd: 'npm pkg set scripts.test="vitest run" scripts.test:watch="vitest" scripts.test:coverage="vitest run --coverage"', desc: "Registra los scripts de testing en package.json sin editar el JSON a mano." },
+      { id: "s3", shell: "ps", cmd: "npm pkg get scripts", desc: "Confirma que test, test:watch y test:coverage quedaron registrados." },
+      { id: "s4", shell: "ps", cmd: "Copy-Item .env.example .env", desc: "Crea tu archivo local de variables de entorno (Supabase)." },
+      { id: "s5", shell: "ps", cmd: "npm run dev", desc: "Levanta el servidor de desarrollo y abre el navegador.", output: "Local: http://localhost:5500/" },
+    ],
+  },
+  {
+    id: "testing",
+    n: "02",
+    nombre: "Testing",
+    icon: "check",
+    hex: "#0f7a55",
+    desc: "Suite Vitest: 49 tests sobre engine.ts y supabase.ts.",
+    cmds: [
+      { id: "t1", shell: "ps", cmd: "npm run test", desc: "Ejecuta la suite completa una sola vez.", output: "✓ 49 tests (engine 34 + supabase 15)" },
+      { id: "t2", shell: "ps", cmd: "npm run test:watch", desc: "Modo observador: re-ejecuta los tests al guardar un archivo." },
+      { id: "t3", shell: "ps", cmd: "npm run test:coverage", desc: "Informe de cobertura v8 con umbrales 60 % en engine.ts y supabase.ts.", output: "% Stmts ≥ 60 · % Branch ≥ 45" },
+      { id: "t4", shell: "ps", cmd: "npx vitest run src/__tests__/engine.test.ts", desc: "Ejecuta únicamente los tests del motor (ensamblado, validación, scoring)." },
+      { id: "t5", shell: "ps", cmd: "npx vitest run src/__tests__/supabase.test.ts", desc: "Ejecuta únicamente los tests de la capa Supabase (cliente mockado)." },
+    ],
+  },
+  {
+    id: "build",
+    n: "03",
+    nombre: "Build & Calidad",
+    icon: "spark",
+    hex: "#2e5eaa",
+    desc: "Compilación TypeScript, build de producción y verificación.",
+    cmds: [
+      { id: "b1", shell: "ps", cmd: "npm run typecheck", desc: "Compilación TypeScript sin emitir archivos (tsc --noEmit).", output: "Sin errores ni warnings" },
+      { id: "b2", shell: "ps", cmd: "npm run build", desc: "Build de producción con sourcemaps y chunks diferidos en dist/.", output: "✓ built in ~4.5s" },
+      { id: "b3", shell: "ps", cmd: "npm run preview", desc: "Sirve dist/ localmente para validar el build antes de desplegar.", output: "Local: http://localhost:4173/" },
+    ],
+  },
+  {
+    id: "git",
+    n: "04",
+    nombre: "Git & GitHub",
+    icon: "history",
+    hex: "#d99125",
+    desc: "Control de versiones: preparar, commitear y publicar cambios.",
+    cmds: [
+      { id: "g1", shell: "ps", cmd: "git status", desc: "Muestra archivos modificados, nuevos y no rastreados." },
+      { id: "g2", shell: "ps", cmd: "git add .", desc: "Prepara todos los cambios para el siguiente commit." },
+      { id: "g3", shell: "ps", cmd: 'git commit -m "feat: sistema de tests Vitest"', desc: "Crea el commit con un mensaje descriptivo (ajústalo a tu cambio)." },
+      { id: "g4", shell: "ps", cmd: "git push origin main", desc: "Sube los cambios al repositorio remoto en GitHub." },
+    ],
+  },
+  {
+    id: "supabase",
+    n: "05",
+    nombre: "Supabase",
+    icon: "cloud",
+    hex: "#b23a6b",
+    desc: "Verificación de la sincronización del historial (SQL Editor, no terminal).",
+    cmds: [
+      { id: "q1", shell: "sql", cmd: "select id, titulo, score from rctee_history order by ts desc;", desc: "Verifica los registros sincronizados desde el SQL Editor de Supabase." },
+      { id: "q2", shell: "sql", cmd: "select count(*) from rctee_history;", desc: "Cuenta total de prompts almacenados en la nube." },
+    ],
+  },
+  {
+    id: "ollama",
+    n: "06",
+    nombre: "Ollama · IA Local",
+    icon: "server",
+    hex: "#5f6d63",
+    desc: "Motor local para el modo offline (llama3.2 en localhost:11434).",
+    cmds: [
+      { id: "o1", shell: "ps", cmd: "ollama pull llama3.2", desc: "Descarga el modelo local usado por el Chatbot en modo Local." },
+      { id: "o2", shell: "ps", cmd: "ollama serve", desc: "Inicia el servidor de Ollama (déjalo corriendo en segundo plano)." },
+      { id: "o3", shell: "ps", cmd: "ollama list", desc: "Lista los modelos instalados; confirma que llama3.2 esté presente." },
+    ],
+  },
 ];

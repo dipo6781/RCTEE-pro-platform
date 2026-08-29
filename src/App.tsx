@@ -31,6 +31,7 @@ const Rentables = lazy(() => import("./views/Intel").then((m) => ({ default: m.R
 const Mercado = lazy(() => import("./views/Intel").then((m) => ({ default: m.Mercado })));
 const Chatbot = lazy(() => import("./views/Chatbot"));
 const SettingsView = lazy(() => import("./views/Settings"));
+const Runbook = lazy(() => import("./views/Runbook"));
 
 /* ── Estado de carga de módulo (fallback de Suspense) ──────────────────────── */
 function ModuleLoader() {
@@ -92,7 +93,7 @@ export default function App() {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const idx = ["1", "2", "3", "4", "5", "6", "7", "8"].indexOf(e.key);
+      const idx = NAV.map((_, i) => String(i + 1)).indexOf(e.key);
       if (idx >= 0 && NAV[idx]) {
         setSection(NAV[idx].id);
         if (NAV[idx].id !== "clasico") setPrefill(null);
@@ -288,6 +289,8 @@ export default function App() {
         return <Mercado />;
       case "chatbot":
         return <Chatbot settings={settings} messages={chat} setMessages={setChat} notify={notify} />;
+      case "runbook":
+        return <Runbook notify={notify} />;
       case "ajustes":
         return (
           <SettingsView

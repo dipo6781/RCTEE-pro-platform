@@ -28,6 +28,7 @@ const ICONS: Record<string, string> = {
   mercado: "M3 20h18M6 16v-5M10 16V8M14 16v-8M18 16V5",
   chatbot: "M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12zM9 11h.01M12 11h.01M15 11h.01",
   ajustes: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v0a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z",
+  runbook: "M4 5h16v14H4zM7.5 9.5l3 2.5-3 2.5M12.5 15h4.5",
   history: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3.5 2",
   x: "M18 6 6 18M6 6l12 12",
   menu: "M4 6h16M4 12h16M4 18h16",
@@ -237,7 +238,7 @@ export function TopBar({
         </div>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <span className="hidden items-center gap-1.5 font-mono text-[10px] font-semibold text-mist/80 xl:flex">
-            <kbd>1</kbd>–<kbd>8</kbd> módulos
+            <kbd>1</kbd>–<kbd>9</kbd> módulos
           </span>
           <span className="hidden font-mono text-xs font-medium tabular-nums text-mist md:block">
             {now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
