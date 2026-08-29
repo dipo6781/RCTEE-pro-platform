@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { EXTENSIONES, FORMATOS, TEMAS, type FormatoId } from "../data";
 import { copyText, pingOllama, timeAgo, type HistoryItem, type Settings as TSettings } from "../engine";
-import { SQL_SCHEMA, sbTest } from "../supabase";
+import { SQL_DEMO, SQL_PROD, sbTest } from "../supabase";
 import { Icon, ViewHeader } from "../chrome";
 import { Reveal, Spinner, Toggle } from "../ui";
 
@@ -39,6 +39,8 @@ export default function SettingsView({
   const [sbPing, setSbPing] = useState<"idle" | "checking" | "ok" | "fail">("idle");
   const [sbCount, setSbCount] = useState<number | null>(null);
   const [sqlCopied, setSqlCopied] = useState(false);
+  const [envCopied, setEnvCopied] = useState(false);
+  const [sqlMode, setSqlMode] = useState<"demo" | "prod">("demo");
   const [confirmClear, setConfirmClear] = useState(false);
   const [savedFlash, setSavedFlash] = useState(0);
   const cloud = settings.mode === "cloud";
@@ -70,11 +72,21 @@ export default function SettingsView({
     }
   };
 
+  const activeSql = sqlMode === "demo" ? SQL_DEMO : SQL_PROD;
+  const envSnippet = `VITE_SUPABASE_URL=${settings.supabaseUrl.trim() || "https://TU-PROYECTO.supabase.co"}\nVITE_SUPABASE_ANON_KEY=${settings.supabaseKey.trim() || "tu_clave_anonima_publica"}`;
+
   const copiarSql = async () => {
-    const ok = await copyText(SQL_SCHEMA);
+    const ok = await copyText(activeSql);
     setSqlCopied(ok);
-    notify(ok ? "SQL del esquema copiado al portapapeles" : "No se pudo copiar", ok ? "ok" : "err");
+    notify(ok ? `SQL (${sqlMode === "demo" ? "Demo" : "Producción"}) copiado al portapapeles` : "No se pudo copiar", ok ? "ok" : "err");
     setTimeout(() => setSqlCopied(false), 1800);
+  };
+
+  const copiarEnv = async () => {
+    const ok = await copyText(envSnippet);
+    setEnvCopied(ok);
+    notify(ok ? "Snippet .env copiado al portapapeles" : "No se pudo copiar", ok ? "ok" : "err");
+    setTimeout(() => setEnvCopied(false), 1800);
   };
 
   const activadas = settings.extensions ?? [];
@@ -504,10 +516,45 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* Esquema SQL */}
+            {/* Guía de conexión + Esquema SQL */}
             <div className="min-w-0">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="font-display text-[14px] font-bold text-ink">Esquema de la tabla</p>
+              <p className="mb-3 font-display text-[14px] font-bold text-ink">Guía de conexión · 5 pasos</p>
+              <ol className="mb-4 space-y-2">
+                {[
+                  ["Crea un proyecto gratuito en supabase.com y entra al Dashboard."],
+                  ["Abre SQL Editor → New query → pega el esquema de la pestaña activa → Run."],
+                  ["En Project Settings → API copia la URL del proyecto y la anon public key."],
+                  ["Pégalas en los campos de la izquierda (o defínelas en .env, snippet abajo)."],
+                  ["Pulsa «Probar conexión», activa el toggle y genera un prompt: subirá en ~2.5 s."],
+                ].map(([paso], i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-ink font-mono text-[10px] font-bold text-paper">
+                      {i + 1}
+                    </span>
+                    <p className="text-[12.5px] leading-snug text-ink/85">{paso}</p>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setSqlMode("demo")}
+                    className={`press rounded-full px-3 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wide transition-colors ${
+                      sqlMode === "demo" ? "bg-jade text-surface" : "bg-line/60 text-mist hover:bg-line"
+                    }`}
+                  >
+                    Demo · sin auth
+                  </button>
+                  <button
+                    onClick={() => setSqlMode("prod")}
+                    className={`press rounded-full px-3 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wide transition-colors ${
+                      sqlMode === "prod" ? "bg-cobalt text-surface" : "bg-line/60 text-mist hover:bg-line"
+                    }`}
+                  >
+                    Producción · auth.uid()
+                  </button>
+                </div>
                 <button
                   onClick={copiarSql}
                   className={`press rounded-md px-3 py-1.5 font-mono text-[11px] font-bold transition-colors ${sqlCopied ? "bg-jade text-surface" : "border border-line-2 bg-paper text-ink hover:border-jade hover:text-jade"}`}
@@ -515,14 +562,36 @@ export default function SettingsView({
                   {sqlCopied ? "¡Copiado!" : "Copiar SQL"}
                 </button>
               </div>
-              <pre className="max-h-[300px] overflow-auto rounded-lg border border-pine-3 bg-pine p-4 font-mono text-[11px] leading-relaxed text-[#d7e5da]">
-                {SQL_SCHEMA}
+              <pre className="max-h-[260px] overflow-auto rounded-lg border border-pine-3 bg-pine p-4 font-mono text-[11px] leading-relaxed text-[#d7e5da]">
+                {activeSql}
               </pre>
-              <div className="mt-3 rounded-md border-l-2 border-honey bg-honey/10 px-4 py-3">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-honey">Nota de seguridad</p>
-                <p className="mt-1 text-[12px] leading-relaxed text-ink/80">
-                  La política incluida es de demostración (acceso anónimo). En producción, activa RLS con políticas por <span className="font-mono font-bold">auth.uid()</span> y usa la anon key solo para lectura acotada.
-                </p>
+
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-mist">Variables de entorno (.env)</p>
+                <button
+                  onClick={copiarEnv}
+                  className={`press rounded-md px-3 py-1 font-mono text-[10.5px] font-bold transition-colors ${envCopied ? "bg-jade text-surface" : "border border-line-2 bg-paper text-ink hover:border-jade hover:text-jade"}`}
+                >
+                  {envCopied ? "¡Copiado!" : "Copiar"}
+                </button>
+              </div>
+              <pre className="mt-1.5 overflow-auto rounded-lg border border-pine-3 bg-pine px-4 py-3 font-mono text-[11px] leading-relaxed text-[#d7e5da]">
+                {envSnippet}
+              </pre>
+
+              <div className="mt-3 space-y-2">
+                <div className="rounded-md border-l-2 border-honey bg-honey/10 px-4 py-3">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-honey">Modo Demo</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-ink/80">
+                    Lectura, inserción y update abiertos a la clave anónima, pero <span className="font-bold">sin DELETE</span>: con la anon key nadie puede borrar registros remotos. Ideal para validar el flujo.
+                  </p>
+                </div>
+                <div className="rounded-md border-l-2 border-cobalt bg-cobalt/10 px-4 py-3">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cobalt">Modo Producción</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-ink/80">
+                    RLS estricto por <span className="font-mono font-bold">auth.uid()</span> con columna <span className="font-mono font-bold">owner</span> estampada por trigger: cada usuario solo ve lo suyo. Requiere login de Supabase Auth en la app.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

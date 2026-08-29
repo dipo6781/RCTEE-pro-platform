@@ -21,26 +21,98 @@ export interface SbResult<T> {
 
 export const SB_TABLE = "rctee_history";
 
-/* ── Esquema SQL: ejecutar en Supabase → SQL Editor ────────────────────────── */
+/* ── Esquemas SQL: ejecutar en Supabase → SQL Editor ───────────────────────── */
 
-export const SQL_SCHEMA = `-- R-C-T-E-E Pro · tabla de historial sincronizado
+export const SQL_DEMO = `-- R-C-T-E-E Pro · Esquema DEMO (clave anónima, sin Supabase Auth)
+-- Ruta: Supabase → SQL Editor → New query → pegar → Run
+
 create table if not exists ${SB_TABLE} (
-  id uuid primary key,
-  ts bigint not null,
-  fuente text not null default 'clasico',
-  titulo text not null,
-  prompt text not null,
-  formato text not null default 'markdown',
-  score integer,
-  meta text
+  id      uuid primary key,
+  ts      bigint  not null,
+  fuente  text    not null default 'clasico'
+          check (fuente in ('clasico','enterprise','plantilla')),
+  titulo  text    not null check (char_length(titulo) between 1 and 200),
+  prompt  text    not null check (char_length(prompt) between 1 and 100000),
+  formato text    not null default 'markdown'
+          check (formato in ('markdown','json','texto')),
+  score   integer check (score is null or (score between 0 and 100)),
+  meta    text    check (meta is null or char_length(meta) <= 500)
 );
+
+create index if not exists idx_${SB_TABLE}_ts on ${SB_TABLE} (ts desc);
 
 alter table ${SB_TABLE} enable row level security;
 
--- Política de demostración (clave anónima). Para producción,
--- reemplaza por políticas basadas en auth.uid().
-create policy "rctee_acceso_anon" on ${SB_TABLE}
-  for all using (true) with check (true);`;
+-- Lectura, inserción y actualización para la clave anónima.
+-- DELETE queda INTENCIONALMENTE fuera: con la anon key nadie
+-- puede borrar registros remotos (solo desde el SQL Editor).
+drop policy if exists "rctee_select_demo" on ${SB_TABLE};
+create policy "rctee_select_demo" on ${SB_TABLE}
+  for select using (true);
+
+drop policy if exists "rctee_insert_demo" on ${SB_TABLE};
+create policy "rctee_insert_demo" on ${SB_TABLE}
+  for insert with check (true);
+
+drop policy if exists "rctee_update_demo" on ${SB_TABLE};
+create policy "rctee_update_demo" on ${SB_TABLE}
+  for update using (true) with check (true);`;
+
+export const SQL_PROD = `-- R-C-T-E-E Pro · Esquema PRODUCCIÓN (RLS por usuario con Supabase Auth)
+-- Requiere que la app inicie sesión (auth.uid() disponible en la sesión).
+
+create table if not exists ${SB_TABLE} (
+  id      uuid primary key,
+  owner   uuid references auth.users (id) on delete cascade,
+  ts      bigint  not null,
+  fuente  text    not null default 'clasico'
+          check (fuente in ('clasico','enterprise','plantilla')),
+  titulo  text    not null check (char_length(titulo) between 1 and 200),
+  prompt  text    not null check (char_length(prompt) between 1 and 100000),
+  formato text    not null default 'markdown'
+          check (formato in ('markdown','json','texto')),
+  score   integer check (score is null or (score between 0 and 100)),
+  meta    text    check (meta is null or char_length(meta) <= 500)
+);
+
+create index if not exists idx_${SB_TABLE}_ts    on ${SB_TABLE} (ts desc);
+create index if not exists idx_${SB_TABLE}_owner on ${SB_TABLE} (owner);
+
+alter table ${SB_TABLE} enable row level security;
+
+-- El owner se estampa automáticamente al insertar.
+create or replace function rctee_set_owner()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.owner := coalesce(new.owner, auth.uid());
+  return new;
+end;
+$$;
+
+drop trigger if exists rctee_owner_stamp on ${SB_TABLE};
+create trigger rctee_owner_stamp
+  before insert on ${SB_TABLE}
+  for each row execute function rctee_set_owner();
+
+-- Cada usuario solo ve y modifica sus propios registros.
+drop policy if exists "rctee_select_own" on ${SB_TABLE};
+create policy "rctee_select_own" on ${SB_TABLE}
+  for select using (owner = auth.uid());
+
+drop policy if exists "rctee_insert_own" on ${SB_TABLE};
+create policy "rctee_insert_own" on ${SB_TABLE}
+  for insert with check (auth.uid() is not null);
+
+drop policy if exists "rctee_update_own" on ${SB_TABLE};
+create policy "rctee_update_own" on ${SB_TABLE}
+  for update using (owner = auth.uid()) with check (owner = auth.uid());
+
+drop policy if exists "rctee_delete_own" on ${SB_TABLE};
+create policy "rctee_delete_own" on ${SB_TABLE}
+  for delete using (owner = auth.uid());`;
+
+/** Alias retrocompatible */
+export const SQL_SCHEMA = SQL_DEMO;
 
 /* ── Cliente diferido: el SDK se descarga como chunk solo cuando se usa ────── */
 
@@ -108,9 +180,9 @@ function rowToItem(r: SbRow): HistoryItem | null {
 function itemToRow(i: HistoryItem): SbRow {
   return {
     id: i.id,
-    ts: i.ts,
-    fuente: i.fuente,
-    titulo: i.titulo,
+    ts: typeof i.ts === "number" && i.ts > 0 ? i.ts : Date.now(),
+    fuente: i.fuente === "enterprise" || i.fuente === "plantilla" ? i.fuente : "clasico",
+    titulo: (i.titulo || "Prompt sin título").slice(0, 200),
     prompt: i.prompt,
     formato: i.formato,
     score: typeof i.score === "number" ? i.score : null,
