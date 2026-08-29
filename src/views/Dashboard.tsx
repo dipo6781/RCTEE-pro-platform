@@ -264,7 +264,7 @@ export default function Dashboard({
         <section className="panel grid grid-cols-2 divide-line max-lg:[&>*:nth-child(-n+2)]:border-b lg:grid-cols-4 lg:divide-x">
           {[
             { v: history.length, label: "Prompts en historial", sub: "persistencia local activa" },
-            { v: totalPlantillas, label: "Plantillas por sector", sub: `${TEMAS.length} temas · 11 subtemas` },
+            { v: totalPlantillas, label: "Plantillas por sector", sub: `${TEMAS.length} temas · ${TEMAS.reduce((a, t) => a + t.subtemas.length, 0)} subtemas` },
             { v: 8, label: "Personalidades IA", sub: "chatbot especializado" },
             { v: settings.mode === "cloud" ? 12 : 20, label: settings.mode === "cloud" ? "s · latencia Groq" : "s timeout Ollama", sub: settings.mode === "cloud" ? "modo cloud activo" : "modo local activo" },
           ].map((s, i) => (

@@ -628,6 +628,164 @@ export const TEMAS: Tema[] = [
       },
     ],
   },
+  {
+    id: "tec",
+    nombre: "Tecnología",
+    desc: "Software, soporte y producto digital",
+    subtemas: [
+      {
+        id: "desarrollo",
+        nombre: "Desarrollo de software",
+        plantillas: [
+          P(
+            "tec-01",
+            "Especificación técnica de feature",
+            "PRD técnico que evita retrabajo en el sprint",
+            {
+              rol: "Tech lead con 10 años en producto SaaS B2B; especialista en especificaciones que eliminan ambigüedad.",
+              contexto:
+                "El equipo de {nombre_equipo} debe entregar {feature} en un sprint de {duracion_sprint}. Hoy las specs llegan como frases sueltas y el 30 % del sprint se pierde en aclaraciones.",
+              tarea: "Redactar la especificación técnica: problema, criterios de aceptación en Given-When-Then, decisiones de diseño, no-objetivos, dependencias con owner y riesgos.",
+              especificaciones:
+                "Mínimo 4 criterios de aceptación; sección de no-objetivos obligatoria; cada dependencia con responsable y fecha. Prohibido «debería funcionar bien».",
+              ejemplos:
+                "Criterio: «Given usuario en plan básico, When exporta más de 1.000 filas, Then el sistema encola la tarea y notifica por email al terminar».",
+            }
+          ),
+          P(
+            "tec-02",
+            "Code review con rúbrica",
+            "Revisiones consistentes, rápidas y formativas",
+            {
+              rol: "Ingeniera staff que usa el code review como herramienta de calidad y mentoría, no como trámite.",
+              contexto:
+                "En {nombre_equipo} las revisiones no tienen criterio común: unas tardan 4 horas, otras 4 minutos. Se busca un estándar auditable sin burocratizar el flujo.",
+              tarea: "Definir la rúbrica de revisión: niveles de severidad con acción requerida, checklist por tipo de cambio (feature, hotfix, refactor) y SLA de respuesta, más 5 comentarios modelo.",
+              especificaciones:
+                "Severidades blocker/major/minor/nit definidas en una línea cada una. SLA de primera respuesta < 4 h hábiles. Comentarios modelo con patrón problema → impacto → sugerencia.",
+              ejemplos:
+                "Comentario major: «Este catch silencioso oculta fallos de red: propone reintento con backoff o un error accionable para el usuario».",
+            }
+          ),
+        ],
+      },
+      {
+        id: "soporte",
+        nombre: "Soporte técnico",
+        plantillas: [
+          P(
+            "tec-03",
+            "Protocolo de escalamiento a nivel 2",
+            "Escalamientos con criterio, no por pánico",
+            {
+              rol: "Gerente de soporte con 8 años operando mesas escalonadas en productos SaaS de alto volumen.",
+              contexto:
+                "Los tickets de {producto_software} crecieron {porcentaje_crecimiento} % y el 40 % de los casos de nivel 1 se escalan sin diagnóstico previo, saturando a ingeniería.",
+              tarea: "Diseñar el protocolo de escalamiento: criterios objetivos de paso a nivel 2, información mínima obligatoria del ticket y SLA por severidad.",
+              especificaciones:
+                "Matriz severidad × criterio × SLA; plantilla de escalamiento con 6 campos obligatorios; 3 ejemplos de escalamiento correcto vs incorrecto.",
+              ejemplos:
+                "Correcto: «Error 500 reproducible, ID de correlación, pasos documentados y log adjunto». Incorrecto: «no funciona, urge».",
+            }
+          ),
+          P(
+            "tec-04",
+            "Artículo de base de conocimiento",
+            "Self-service que reduce tickets repetidos",
+            {
+              rol: "Technical writer con experiencia en bases de conocimiento que desvían el 30 % de los tickets.",
+              contexto:
+                "El 25 % de los tickets de {producto_software} son variantes del mismo problema: {problema_frecuente}. No existe artículo de autoayuda y el equipo repite la respuesta a diario.",
+              tarea: "Escribir el artículo de resolución: diagnóstico en 3 preguntas, solución paso a paso, causas raíz y cuándo escalar.",
+              especificaciones:
+                "Lenguaje para usuario no técnico; máximo 500 palabras; pasos numerados sin saltos; incluir sección «Si esto no funcionó» con datos a recopilar antes de contactar soporte.",
+              ejemplos:
+                "Paso 3: «Abre Configuración → Sincronización y pulsa Forzar resincronización; el proceso tarda 90 segundos y no debes cerrar la app».",
+            }
+          ),
+        ],
+      },
+    ],
+  },
+  {
+    id: "rrhh",
+    nombre: "RRHH",
+    desc: "Reclutamiento, cultura y retención de talento",
+    subtemas: [
+      {
+        id: "reclutamiento",
+        nombre: "Reclutamiento",
+        plantillas: [
+          P(
+            "rrh-01",
+            "Descripción de puesto estructurada",
+            "Vacantes que filtran en vez de inflar la tubería",
+            {
+              rol: "Especialista en atracción de talento con 9 años escribiendo vacantes que atraen perfiles calificados y disuaden a los que no encajan.",
+              contexto:
+                "La vacante de {puesto} en {empresa} recibe 400 aplicaciones y solo 8 califican; el equipo pierde 20 horas semanales filtrando CVs que no cumplen lo esencial.",
+              tarea: "Redactar la descripción de puesto: propósito en 2 líneas, 5 responsabilidades con entregable, requisitos separados en esenciales vs deseables, y 3 señales de éxito a 6 meses.",
+              especificaciones:
+                "Máximo 600 palabras; cero lenguaje genérico («proactivo» sin definición); incluir rango salarial o justificación de omisión; tono directo.",
+              ejemplos:
+                "Señal de éxito 6 meses: «Ha llevado 2 features a producción sin rollbacks mayores y mentoriza a un junior del equipo».",
+            }
+          ),
+          P(
+            "rrh-02",
+            "Entrevista técnica con rúbrica",
+            "Evaluaciones comparables entre entrevistadores",
+            {
+              rol: "Engineering manager que calibró su proceso de entrevistas para reducir el sesgo entre evaluadores.",
+              contexto:
+                "Para el puesto de {puesto}, tres entrevistadores evalúan con criterios distintos: un candidato recibe «fuerte» de uno y «débil» de otro por la misma entrevista.",
+              tarea: "Diseñar la entrevista técnica de 60 minutos: agenda por bloques, 4 ejercicios con rúbrica de 4 niveles y preguntas de sondeo por competencia.",
+              especificaciones:
+                "Cada ejercicio con resultado esperado y señales de nivel alto/medio/bajo. Prohibidos los acertijos sin relación con el trabajo real. Incluir guía de calibración de 1 página.",
+              ejemplos:
+                "Señal alta en diseño: «Pregunta por restricciones de escala antes de proponer arquitectura; menciona trade-offs sin que se le pidan».",
+            }
+          ),
+        ],
+      },
+      {
+        id: "cultura",
+        nombre: "Cultura & retención",
+        plantillas: [
+          P(
+            "rrh-03",
+            "Onboarding 30-60-90",
+            "Incorporaciones que retienen el talento nuevo",
+            {
+              rol: "People operations lead con programas de onboarding que redujeron la rotación temprana del 22 % al 9 %.",
+              contexto:
+                "En {empresa}, el 18 % de las contrataciones de {area} renuncia antes del mes 4; las salidas mencionan «falta de claridad sobre expectativas» como causa principal.",
+              tarea: "Diseñar el plan de onboarding 30-60-90: hitos de aprendizaje, entregas esperadas por periodo, rituales de feedback y red de contactos internos asignada.",
+              especificaciones:
+                "Cada periodo con 3 hitos medibles y 1 entrega visible; buddy asignado desde el día 1; checkpoints de feedback en días 15, 45 y 80 con guion de conversación.",
+              ejemplos:
+                "Día 30: «Haber cerrado su primer ticket de punta a punta en producción, con revisión de su buddy y demo de 10 minutos al equipo».",
+            }
+          ),
+          P(
+            "rrh-04",
+            "Encuesta de clima y plan de acción",
+            "Datos de clima convertidos en decisiones",
+            {
+              rol: "Consultora de cultura organizacional experta en convertir encuestas de clima en planes que sí se ejecutan.",
+              contexto:
+                "El clima de {empresa} (240 personas) se mide cada año y cada año los resultados se archivan: la participación cayó del 84 % al 57 % porque «nada cambia».",
+              tarea: "Diseñar la encuesta de 12 preguntas por dimensión, el protocolo de lectura de resultados y un plan de acción con owners, presupuesto y fecha de revisión.",
+              especificaciones:
+                "Máximo 12 preguntas en escala 1-5 + 2 abiertas; resultados por equipo con mínimo 5 respuestas para anonimato; máximo 3 iniciativas priorizadas, no 20.",
+              ejemplos:
+                "Dimensión claridad: «Sé exactamente qué se espera de mi trabajo en los próximos 3 meses» → si < 3,5: iniciativa de OKRs visibles con owner y fecha.",
+            }
+          ),
+        ],
+      },
+    ],
+  },
 ];
 
 /* ── Nichos rentables ──────────────────────────────────────────────────────── */
@@ -796,6 +954,82 @@ export const RENTABLES: Nicho[] = [
         "Objeción «está caro» → «Entiendo, Ana. Caro comparado con qué, ¿con no resolverlo otro trimestre? Hagamos el número: [silencio de 4 segundos]».",
     },
   },
+  {
+    id: "r9",
+    titulo: "Especificaciones técnicas para equipos dev",
+    nicho: "SaaS B2B",
+    ticket: "$75 / spec",
+    demanda: 4,
+    dificultad: "Media",
+    desc: "PRDs técnicos con criterios de aceptación Gherkin para equipos que pierden sprints en aclaraciones.",
+    campos: {
+      rol: "Tech lead con 10 años en producto SaaS B2B; escribo especificaciones que eliminan el retrabajo.",
+      contexto:
+        "Un equipo de producto SaaS pierde el 30 % de cada sprint en aclaraciones porque las especificaciones llegan como frases sueltas de negocio. Necesita un formato de spec reutilizable que ingeniería pueda ejecutar sin reuniones extra: problema, criterios de aceptación, no-objetivos y dependencias con owner.",
+      tarea: "Crear la plantilla maestra de especificación técnica: estructura fija, guía de criterios en Given-When-Then y 2 specs de ejemplo (feature e integración) listas para sprint.",
+      especificaciones:
+        "Estructura: problema en 3 líneas, 4+ criterios Gherkin, no-objetivos, dependencias con responsable y fecha. Incluir anti-ejemplo comentado de una spec ambigua y su corrección.",
+      ejemplos:
+        "Criterio modelo: «Given un usuario en plan básico, When intenta exportar más de 1.000 filas, Then el sistema encola la exportación y notifica al finalizar».",
+    },
+  },
+  {
+    id: "r10",
+    titulo: "Vacantes que filtran talento",
+    nicho: "HR Tech",
+    ticket: "$40 / pack",
+    demanda: 3,
+    dificultad: "Baja",
+    desc: "Descripciones de puesto + rúbricas de entrevista que reducen a la mitad el filtrado manual de CVs.",
+    campos: {
+      rol: "Especialista en atracción de talento con 9 años escribiendo vacantes que filtran en origen.",
+      contexto:
+        "Una empresa de 80 personas publica vacantes genéricas y recibe 400 aplicaciones por puesto de las cuales solo 8 califican; el equipo dedica 20 horas semanales a filtrar CVs. Necesita descripciones de puesto estructuradas y rúbricas de entrevista comparables entre entrevistadores.",
+      tarea: "Diseñar el pack de contratación: plantilla de descripción de puesto (propósito, responsabilidades con entregable, esenciales vs deseables, señales de éxito a 6 meses) y rúbrica de entrevista de 4 niveles para 3 competencias clave.",
+      especificaciones:
+        "Cero lenguaje genérico («proactivo» sin definición). Rango salarial obligatorio o justificación de omisión. Rúbrica con señales observables por nivel, no adjetivos.",
+      ejemplos:
+        "Señal alta: «Pregunta por restricciones de escala antes de proponer; menciona trade-offs sin que se le pidan». Señal baja: «Describe soluciones sin explorar el problema».",
+    },
+  },
+  {
+    id: "r11",
+    titulo: "Informes de campo agroindustriales",
+    nicho: "Agroindustria",
+    ticket: "$55 / informe",
+    demanda: 3,
+    dificultad: "Media",
+    desc: "Reportes de inspección estandarizados para cooperativas y agroexportadoras con datos de campo dispersos.",
+    campos: {
+      rol: "Ingeniero agrónomo consultor con 11 años estandarizando reportes de campo para agroexportadoras.",
+      contexto:
+        "Una cooperativa de {cultivo} con 340 productores recibe reportes de campo en formatos libres (fotos de WhatsApp, notas de voz) y pierde 3 días por semana consolidándolos para el comprador internacional, que exige trazabilidad auditable.",
+      tarea: "Crear el informe de inspección estandarizado: ficha de lote, indicadores fenológicos y sanitarios con umbrales de alerta, registro fotográfico mínimo y resumen ejecutivo para el comprador.",
+      especificaciones:
+        "Formato llenable en móvil en menos de 15 minutos por lote. Umbrales con semáforo y acción por nivel. Resumen ejecutivo de 120 palabras con dictamen de riesgo.",
+      ejemplos:
+        "Umbral amarillo: «Incidencia de plaga 8–15 % → re-aplicar en 72 h y re-monitorear en 5 días». Rojo: «> 15 % → cuarentena de lote y aviso al comprador en 24 h».",
+    },
+  },
+  {
+    id: "r12",
+    titulo: "Guiones de venta por WhatsApp",
+    nicho: "Retail & consumo",
+    ticket: "$30 / pack",
+    demanda: 5,
+    dificultad: "Baja",
+    desc: "Secuencias conversacionales de WhatsApp que convierten chats en pedidos sin sonar a spam.",
+    campos: {
+      rol: "Especialista en comercio conversacional con 6 años diseñando guiones de WhatsApp que convierten sin bloqueos de cuenta.",
+      contexto:
+        "Un comercio de {rubro} atiende 90 chats diarios por WhatsApp con 3 vendedores que improvisan cada conversación; la tasa de cierre es 9 % y los clientes se enfrían entre respuesta y respuesta. El objetivo es subir el cierre a 20 % estandarizando la conversación.",
+      tarea: "Escribir el pack de guiones: saludo con calificación en 2 preguntas, secuencia de seguimiento en 3 toques (2 h, 24 h, 72 h), manejo de «está caro» y «lo voy a pensar», y cierre con método de pago.",
+      especificaciones:
+        "Mensajes de máximo 3 líneas, uno por burbuja; emojis solo donde marcan tono. Prohibido el texto-wall. Incluir reglas de respuesta rápida y 5 respuestas guardadas.",
+      ejemplos:
+        "Seguimiento 24 h: «Hola Marta, ¿pudiste ver las fotos del modelo azul? Te lo separo hasta mañana a las 6 pm sin compromiso» → urgencia real + salida digna.",
+    },
+  },
 ];
 
 /* ── Inteligencia de mercado ───────────────────────────────────────────────── */
@@ -841,4 +1075,50 @@ export const MERCADO_SENALES = [
   { texto: "Cae la demanda de prompts genéricos de un solo uso", delta: "−19 %", dir: "down" },
   { texto: "Sube el pago por plantillas con variables dinámicas por sector", delta: "+33 %", dir: "up" },
   { texto: "Los equipos legales piden cláusulas de propiedad intelectual sobre prompts", delta: "+24 %", dir: "up" },
+];
+
+/* ── Actividades de mercado · 32 plantillas por categoría ──────────────────── */
+
+export type ActividadCat = "Lanzamiento" | "Crecimiento" | "Operaciones" | "Ventas";
+
+export interface Actividad {
+  id: string;
+  cat: ActividadCat;
+  nombre: string;
+  prompt: string;
+}
+
+export const MERCADO_ACTIVIDADES: Actividad[] = [
+  { id: "a01", cat: "Lanzamiento", nombre: "Validación de problema con 10 entrevistas", prompt: "Tarea: diseñar guion de 10 entrevistas de descubrimiento para validar {problema}. Contexto: etapa pre-MVP, sin pauta. Formato: guion + matriz de señales de validación." },
+  { id: "a02", cat: "Lanzamiento", nombre: "Landing con 3 propuestas de valor", prompt: "Tarea: redactar landing con 3 hipótesis de propuesta de valor para {producto}. Contexto: tráfico frío, 200 visitas/semana. Formato: titular, sub, 3 bloques y CTA por hipótesis." },
+  { id: "a03", cat: "Lanzamiento", nombre: "Plan de lanzamiento en 45 días", prompt: "Tarea: cronograma de lanzamiento en 3 fases (expectativa, día D, sostenimiento). Contexto: presupuesto {presupuesto}, objetivo 1.000 ventas. Formato: tabla semanal por canal con KPI." },
+  { id: "a04", cat: "Lanzamiento", nombre: "Lista de espera beta con incentivo", prompt: "Tarea: secuencia de captación y nurturing para lista de espera de la beta de {producto}. Contexto: meta 5.000 registros antes del día 14. Formato: 4 correos + incentivo por hito." },
+  { id: "a05", cat: "Lanzamiento", nombre: "Prueba de precios con 3 anclas", prompt: "Tarea: diseñar test de precios con 3 anclas para {producto}. Contexto: sin referencia de willingness-to-pay. Formato: variantes A/B/C con métrica de decisión y regla de parada." },
+  { id: "a06", cat: "Lanzamiento", nombre: "Kit de prensa de lanzamiento", prompt: "Tarea: escribir nota de prensa + 5 ángulos para medios del sector {sector}. Contexto: lanzamiento sin agencia de PR. Formato: nota de 400 palabras con cita del fundador." },
+  { id: "a07", cat: "Lanzamiento", nombre: "Onboarding de early adopters", prompt: "Tarea: diseñar onboarding de los primeros 100 usuarios de {producto}. Contexto: alto riesgo de abandono en semana 1. Formato: hitos día 1/7/14 + guion de entrevista de activación." },
+  { id: "a08", cat: "Lanzamiento", nombre: "Retrospectiva post-lanzamiento", prompt: "Tarea: facilitar retrospectiva de lanzamiento de {producto} con 4 equipos. Contexto: resultados mixtos, culpas cruzadas. Formato: agenda de 90 min + matriz hechos→aprendizajes→acciones." },
+  { id: "a09", cat: "Crecimiento", nombre: "Programa de referidos con doble incentivo", prompt: "Tarea: diseñar programa de referidos para {producto}. Contexto: CAC actual {cac}, base de 3.000 clientes activos. Formato: mecánica, incentivos emisor/receptor, reglas antifraude y KPIs." },
+  { id: "a10", cat: "Crecimiento", nombre: "Calendario SEO de 12 artículos", prompt: "Tarea: plan de contenidos SEO trimestral para {sitio}. Contexto: dominio nuevo, autoridad baja. Formato: 12 títulos con intención de búsqueda, dificultad estimada y brief de 5 líneas." },
+  { id: "a11", cat: "Crecimiento", nombre: "Mapa de alianzas estratégicas", prompt: "Tarea: identificar 8 socios potenciales para {producto} y diseñar el pitch de alianza. Contexto: sin equipo de partnerships. Formato: matriz socio × valor mutuo × propuesta concreta." },
+  { id: "a12", cat: "Crecimiento", nombre: "Sistema de reseñas y reputación", prompt: "Tarea: automatizar la generación de reseñas para {negocio}. Contexto: nota actual 3,9/5, 60 reseñas. Formato: secuencia post-servicio + protocolo de respuesta a reseñas negativas." },
+  { id: "a13", cat: "Crecimiento", nombre: "Activación de comunidad dormida", prompt: "Tarea: campaña de reactivación de comunidad de {marca} (12.000 miembros, 4 % activos). Contexto: 18 meses sin gestión. Formato: calendario de 30 días + 3 formatos de contenido." },
+  { id: "a14", cat: "Crecimiento", nombre: "Adquisición pagada con tope de CAC", prompt: "Tarea: plan de pauta para {producto} con tope de CAC {cac_max}. Contexto: presupuesto mensual limitado. Formato: distribución por canal, creatividades por ángulo y reglas de pausa." },
+  { id: "a15", cat: "Crecimiento", nombre: "Expansión de LTV con productos anexos", prompt: "Tarea: diseñar escalera de valor para clientes de {producto}. Contexto: LTV actual {ltv}, churn del 3 % mensual. Formato: 3 productos anexos con precio, momento de oferta y guion." },
+  { id: "a16", cat: "Crecimiento", nombre: "Plan de reducción de churn", prompt: "Tarea: diagnosticar y reducir churn mensual del {churn} % en {producto}. Contexto: 62 % de las bajas ocurren en el mes 2. Formato: cohortes, 3 hipótesis priorizadas y experimentos." },
+  { id: "a17", cat: "Operaciones", nombre: "SLA con proveedores críticos", prompt: "Tarea: redactar SLA para proveedor de {servicio}. Contexto: 2 incidentes graves sin penalización en el año. Formato: niveles de servicio, penalizaciones progresivas y revisión trimestral." },
+  { id: "a18", cat: "Operaciones", nombre: "Inventario de procesos y owners", prompt: "Tarea: mapear los 20 procesos clave de {empresa}. Contexto: dependencia de 3 personas que concentran conocimiento. Formato: proceso × owner × frecuencia × riesgo de bus factor." },
+  { id: "a19", cat: "Operaciones", nombre: "Rediseño de reuniones recurrentes", prompt: "Tarea: auditar y rediseñar el calendario de reuniones de {equipo}. Contexto: 14 h semanales por persona en reuniones. Formato: matriz conservar/fusionar/eliminar + formato nuevo por reunión." },
+  { id: "a20", cat: "Operaciones", nombre: "Tablero semanal de KPIs operativos", prompt: "Tarea: definir tablero de 6 KPIs para la operación de {negocio}. Contexto: los datos existen pero nadie los mira. Formato: métrica × fórmula × owner × umbral de alerta × ritual de revisión." },
+  { id: "a21", cat: "Operaciones", nombre: "Base de conocimiento interna", prompt: "Tarea: estructurar la wiki interna de {empresa} (35 personas). Contexto: las respuestas viven en chats dispersos. Formato: taxonomía de 5 secciones + plantilla de artículo + ritual de mantenimiento." },
+  { id: "a22", cat: "Operaciones", nombre: "Plan de contingencia ante caídas", prompt: "Tarea: plan de contingencia para {servicio_critico}. Contexto: última caída costó 6 h de operación. Formato: matriz de escenarios × responsables × comunicación × checklist de recuperación." },
+  { id: "a23", cat: "Operaciones", nombre: "Política de compras y aprobación", prompt: "Tarea: política de compras para {empresa} en crecimiento. Contexto: gastos no autorizados crecieron 40 %. Formato: umbrales por monto, aprobadores por nivel y flujo de reembolso en 5 pasos." },
+  { id: "a24", cat: "Operaciones", nombre: "OKRs trimestrales por equipo", prompt: "Tarea: facilitar la definición de OKRs de {equipos} equipos. Contexto: primer ciclo, escepticismo alto. Formato: 2-3 objetivos por equipo con 3 resultados medibles + ritual de check-in semanal." },
+  { id: "a25", cat: "Ventas", nombre: "Guion de descubrimiento de 25 min", prompt: "Tarea: guion de llamada de descubrimiento para {servicio} de ticket {ticket}. Contexto: los vendedores hablan 80 % del tiempo. Formato: 8 preguntas en orden + regla de silencio de 4 segundos." },
+  { id: "a26", cat: "Ventas", nombre: "Battlecard de objeciones top 5", prompt: "Tarea: battlecard con las 5 objeciones más frecuentes para {producto}. Contexto: cada vendedor improvisa respuestas distintas. Formato: objeción × respuesta literal × prueba × pregunta de rebote." },
+  { id: "a27", cat: "Ventas", nombre: "Plantilla de propuesta en 3 niveles", prompt: "Tarea: propuesta comercial en 3 niveles para {servicio}. Contexto: se pierde el 70 % de propuestas enviadas. Formato: diagnóstico, 3 opciones con ancla premium y plan de implementación." },
+  { id: "a28", cat: "Ventas", nombre: "Secuencia de seguimiento sin ser pesado", prompt: "Tarea: secuencia de 5 toques post-propuesta para {producto}. Contexto: el «¿pudiste ver mi propuesta?» mata la venta. Formato: cada toque aporta valor nuevo + canal alternado + retiro digno." },
+  { id: "a29", cat: "Ventas", nombre: "Guion de renovación con expansión", prompt: "Tarea: guion de renovación anual para clientes de {producto}. Contexto: renovación base 82 %, expansión 8 %. Formato: repaso de valor cuantificado + 2 opciones de expansión + urgencia real." },
+  { id: "a30", cat: "Ventas", nombre: "Matriz de precios y descuentos", prompt: "Tarea: política de descuentos para {empresa}. Contexto: descuentos del 20 % ante la primera objeción. Formato: matriz condición × descuento máximo × aprobador + alternativas sin precio." },
+  { id: "a31", cat: "Ventas", nombre: "Higiene de pipeline semanal", prompt: "Tarea: ritual de limpieza de pipeline para equipo de {n_vendedores} vendedores. Contexto: 40 % de oportunidades llevan 60+ días sin avance. Formato: criterios de cierre forzado + forecast ponderado." },
+  { id: "a32", cat: "Ventas", nombre: "Análisis win/loss de 20 cierres", prompt: "Tarea: entrevistar 10 ganados y 10 perdidos de {producto}. Contexto: se desconoce por qué se pierde. Formato: guion de 15 min + matriz de patrones + 3 cambios accionables al proceso." },
 ];

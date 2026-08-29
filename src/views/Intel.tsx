@@ -4,7 +4,7 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState } from "react";
-import { MERCADO_DEMANDA, MERCADO_SENALES, MERCADO_TIERS, RENTABLES, type Nicho } from "../data";
+import { MERCADO_ACTIVIDADES, MERCADO_DEMANDA, MERCADO_SENALES, MERCADO_TIERS, RENTABLES, type Nicho } from "../data";
 import { Icon, ViewHeader } from "../chrome";
 import { Reveal } from "../ui";
 
@@ -184,6 +184,90 @@ export function Mercado() {
           </div>
         </div>
       </Reveal>
+
+      <Actividades />
     </div>
+  );
+}
+
+/* ── Actividades de mercado · 32 plantillas por categoría ──────────────────── */
+
+const CAT_HEX: Record<string, string> = {
+  Lanzamiento: "#e4572e",
+  Crecimiento: "#0f7a55",
+  Operaciones: "#2e5eaa",
+  Ventas: "#d99125",
+};
+
+function Actividades() {
+  const [cat, setCat] = useState<string>("todas");
+  const [copied, setCopied] = useState<string | null>(null);
+  const cats = ["todas", "Lanzamiento", "Crecimiento", "Operaciones", "Ventas"];
+  const lista = cat === "todas" ? MERCADO_ACTIVIDADES : MERCADO_ACTIVIDADES.filter((a) => a.cat === cat);
+
+  const copiar = async (id: string, texto: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      /* portapapeles no disponible en este navegador */
+    }
+    setCopied(id);
+    setTimeout(() => setCopied((c) => (c === id ? null : c)), 1500);
+  };
+
+  return (
+    <Reveal className="mt-6">
+      <div className="panel p-6">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="font-display text-lg font-extrabold text-ink">Actividades de mercado</h3>
+            <p className="mt-0.5 max-w-xl text-[12.5px] leading-relaxed text-mist">
+              {MERCADO_ACTIVIDADES.length} actividades accionables por categoría. Haz click en una para copiar su prompt base y caliébralo en el Generador Clásico.
+            </p>
+          </div>
+          <span className="rounded-full bg-ink px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-paper">{lista.length} visibles</span>
+        </div>
+        <div className="mb-5 flex flex-wrap gap-1.5">
+          {cats.map((c) => {
+            const n = c === "todas" ? MERCADO_ACTIVIDADES.length : MERCADO_ACTIVIDADES.filter((a) => a.cat === c).length;
+            const active = cat === c;
+            return (
+              <button
+                key={c}
+                onClick={() => setCat(c)}
+                className={`press rounded-full px-3.5 py-1.5 font-mono text-[11px] font-bold capitalize transition-colors ${
+                  active ? "bg-ink text-paper" : "bg-line/60 text-mist hover:bg-line"
+                }`}
+              >
+                {c} · {n}
+              </button>
+            );
+          })}
+        </div>
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {lista.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => copiar(a.id, a.prompt)}
+              className={`press group rounded-md border p-3.5 text-left transition-all hover:-translate-y-0.5 ${
+                copied === a.id
+                  ? "border-jade bg-jade/5"
+                  : "border-line bg-paper/60 hover:border-line-2 hover:shadow-[0_10px_24px_-14px_rgba(20,32,26,0.4)]"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: CAT_HEX[a.cat] }} />
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{a.cat}</span>
+                <span className={`ml-auto font-mono text-[9.5px] font-bold ${copied === a.id ? "text-jade" : "text-line-2 group-hover:text-jade"}`}>
+                  {copied === a.id ? "¡copiado!" : "copiar"}
+                </span>
+              </span>
+              <span className="mt-1.5 block font-display text-[13.5px] font-bold leading-snug text-ink">{a.nombre}</span>
+              <span className="mt-1 line-clamp-2 block font-mono text-[10px] leading-relaxed text-mist">{a.prompt}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Reveal>
   );
 }
