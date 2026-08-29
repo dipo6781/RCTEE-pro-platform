@@ -287,6 +287,7 @@ export function HistoryDrawer({
   onClearAll,
   onExportAll,
   onImport,
+  onReload,
   notify,
 }: {
   open: boolean;
@@ -364,6 +365,15 @@ export function HistoryDrawer({
                 </div>
                 <p className="mt-2 line-clamp-2 font-mono text-[11px] leading-relaxed text-mist">{item.prompt.slice(0, 160)}…</p>
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  {item.bloques && (
+                    <button
+                      onClick={() => onReload(item)}
+                      title="Recargar los bloques R-C-T-E-E en el Generador Clásico"
+                      className="press inline-flex items-center gap-1.5 rounded-md bg-jade px-3 py-1.5 font-mono text-xs font-bold text-surface hover:bg-jade-2"
+                    >
+                      <Icon name="refresh" className="h-3.5 w-3.5" /> Cargar
+                    </button>
+                  )}
                   <CopyBtn text={item.prompt} />
                   <button
                     onClick={() => {

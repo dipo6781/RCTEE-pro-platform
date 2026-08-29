@@ -216,7 +216,7 @@ export default function App() {
           fuente: (["clasico", "enterprise", "plantilla"] as const).includes(i.fuente) ? i.fuente : ("clasico" as const),
           titulo: i.titulo,
           prompt: i.prompt,
-          formato: (["markdown", "json", "texto"] as const).includes(i.formato) ? i.formato : ("markdown" as const),
+          formato: (["markdown", "json", "texto", "lista", "tabla"] as const).includes(i.formato) ? i.formato : ("markdown" as const),
           score: typeof i.score === "number" ? i.score : undefined,
           meta: typeof i.meta === "string" ? i.meta : undefined,
         }));
@@ -239,6 +239,15 @@ export default function App() {
     setPrefill({ titulo: n.titulo, campos: n.campos });
     setSection("clasico");
     notify(`Nicho «${n.titulo}» cargado en el Generador Clásico`, "ok");
+  };
+
+  /* ── Recargar un prompt del historial en el generador ── */
+  const reloadItem = (item: HistoryItem) => {
+    if (!item.bloques) return;
+    setPrefill({ titulo: item.titulo, campos: item.bloques });
+    setSection("clasico");
+    setHistoryOpen(false);
+    notify(`«${item.titulo}» recargado en el Generador Clásico`, "ok");
   };
 
   const toggleMode = () => {
@@ -346,6 +355,7 @@ export default function App() {
         onClearAll={() => setHistory([])}
         onExportAll={exportAll}
         onImport={importFile}
+        onReload={reloadItem}
         notify={notify}
       />
 
