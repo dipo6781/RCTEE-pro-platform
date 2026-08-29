@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  R-C-T-E-E Pro · Pipeline de Integración Continua
+#  React 18 + TypeScript + Vite 6 + Vitest
+#
+#  Flujo: checkout → setup-node (Node 20 + caché npm) → npm ci
+#        → type check → tests unitarios → build de producción
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Hardening estándar: permisos mínimos y cancelación de ejecuciones obsoletas
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-pipeline:
+    runs-on: ubuntu-latest
+
+    # Variables dummy para el build de Vite en CI.
+    # Las credenciales reales NUNCA viven aquí: en producción se inyectan
+    # como Secrets del repositorio (Settings → Secrets and variables).
+    env:
+      VITE_SUPABASE_URL: https://dummy.supabase.co
+      VITE_SUPABASE_ANON_KEY: dummy_anon_key_for_ci_build
+
+    steps:
+      # 1 · Código fuente
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # 2 · Node 20.x con caché de npm basada en package-lock.json
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      # 3 · Instalación estricta (falla si el lockfile está desincronizado)
+      - name: Instalar dependencias
+        run: npm ci
+
+      # 4 · Type check (sin emitir archivos)
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # 5 · Tests unitarios en modo no-interactivo (vitest run)
+      - name: Ejecutar tests
+        run: npm run test
+
+      # 6 · Build de producción
+      - name: Build
+        run: npm run build
