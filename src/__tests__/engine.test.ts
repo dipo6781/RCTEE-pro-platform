@@ -4,19 +4,24 @@
    variables dinámicas, fusión de historiales y utilidades.
    ──────────────────────────────────────────────────────────────────────────── */
 
-import { describe, it, expect } from "vitest";
-import { PERSONAS, type CamposRCTEE } from "../data";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { PERSONALIDADES, type CamposRCTEE, type Personalidad } from "../data";
 import {
   DEFAULT_SETTINGS,
+  ENFOQUE_INSTRUCCIONES,
   LS,
+  TONO_INSTRUCCIONES,
   buildPrompt,
+  buildSystemMessage,
   delay,
   extractVariables,
+  groqChat,
   interpolate,
   interpolateCampos,
   loadLS,
   localReply,
   mergeHistories,
+  ollamaChat,
   qualityScore,
   saveLS,
   scoreLabel,
@@ -24,6 +29,7 @@ import {
   uid,
   validateClassic,
   type HistoryItem,
+  type Settings,
   type Toggles,
 } from "../engine";
 
@@ -326,7 +332,7 @@ describe("utilidades", () => {
 /* ── Motor local de respaldo ───────────────────────────────────────────────── */
 
 describe("localReply() · motor de respaldo", () => {
-  const persona = PERSONAS[0];
+  const persona = PERSONALIDADES[0];
 
   it("responde al saludo presentándose con su nombre", () => {
     const r = localReply(persona, "hola, ¿qué tal?", 0);
@@ -352,5 +358,156 @@ describe("localReply() · motor de respaldo", () => {
     expect(r0).not.toBe(r1);
     expect(r1).not.toBe(r2);
     [r0, r1, r2].forEach((r) => expect(r).toContain(persona.nombre));
+  });
+});
+
+/* ── buildSystemMessage() · agente adaptativo ──────────────────────────────── */
+
+describe("buildSystemMessage()", () => {
+  const ledger = PERSONALIDADES.find((p) => p.id === "ledger") as Personalidad;
+  const vector = PERSONALIDADES.find((p) => p.id === "vector") as Personalidad;
+
+  it("concatena en orden: prompt base, tono, enfoque, capacidades, restricciones, ejemplos y adaptabilidad", () => {
+    const msg = buildSystemMessage(ledger);
+    const iBase = msg.indexOf(ledger.systemPrompt);
+    const iTono = msg.indexOf("## TONO");
+    const iEnfoque = msg.indexOf("## ENFOQUE");
+    const iCaps = msg.indexOf("## CAPACIDADES");
+    const iRest = msg.indexOf("## RESTRICCIONES");
+    const iEj = msg.indexOf("## EJEMPLOS DE REFERENCIA");
+    const iAdapt = msg.indexOf("## ADAPTABILIDAD");
+
+    expect(iBase).toBe(0);
+    expect(iTono).toBeGreaterThan(iBase);
+    expect(iEnfoque).toBeGreaterThan(iTono);
+    expect(iCaps).toBeGreaterThan(iEnfoque);
+    expect(iRest).toBeGreaterThan(iCaps);
+    expect(iEj).toBeGreaterThan(iRest);
+    expect(iAdapt).toBeGreaterThan(iEj);
+  });
+
+  it("incluye la instrucción del tono y del enfoque correspondientes", () => {
+    const msg = buildSystemMessage(ledger);
+    expect(msg).toContain(TONO_INSTRUCCIONES[ledger.tono]);
+    expect(msg).toContain(ENFOQUE_INSTRUCCIONES[ledger.enfoque]);
+  });
+
+  it("lista todas las capacidades y restricciones sin duplicarlas", () => {
+    const msg = buildSystemMessage(vector);
+    for (const c of vector.capacidades) {
+      expect(msg).toContain(`- ${c}`);
+      expect(msg.split(`- ${c}`).length - 1).toBe(1); // aparece exactamente una vez
+    }
+    for (const r of vector.restricciones) {
+      expect(msg).toContain(`- ${r}`);
+      expect(msg.split(`- ${r}`).length - 1).toBe(1);
+    }
+  });
+
+  it("no duplica el system prompt base", () => {
+    const msg = buildSystemMessage(ledger);
+    expect(msg.split(ledger.systemPrompt).length - 1).toBe(1);
+  });
+
+  it("omite la sección de ejemplos cuando la personalidad no los tiene", () => {
+    const sinEjemplos: Personalidad = { ...ledger, ejemplos: [] };
+    const msg = buildSystemMessage(sinEjemplos);
+    expect(msg).not.toContain("## EJEMPLOS DE REFERENCIA");
+    // el resto de secciones se mantiene
+    expect(msg).toContain("## TONO");
+    expect(msg).toContain("## ADAPTABILIDAD");
+  });
+
+  it("distingue la directriz de adaptabilidad según el flag", () => {
+    const adaptativa = buildSystemMessage(vector); // adaptativo: true
+    const estable = buildSystemMessage(ledger); // adaptativo: false
+    expect(adaptativa).not.toBe(estable);
+    expect(adaptativa.toLowerCase()).toContain("adapt");
+    expect(estable.toLowerCase()).toContain("estable");
+  });
+});
+
+/* ── Payload de API con parámetros dinámicos ───────────────────────────────── */
+
+describe("payload de API · temperatura y maxTokens por personalidad", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const settingsCloud: Settings = {
+    ...DEFAULT_SETTINGS,
+    mode: "cloud",
+    groqKey: "gsk_test_0123456789",
+    groqModel: "llama3-8b-8192",
+  };
+
+  it("groqChat inyecta temperature y max_tokens de Ledger (0.4 / 2000)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "respuesta de prueba" } }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ledger = PERSONALIDADES.find((p) => p.id === "ledger") as Personalidad;
+    const out = await groqChat(settingsCloud, [{ role: "user", content: "hola" }], ledger);
+
+    expect(out).toBe("respuesta de prueba");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, { body: string; headers: Record<string, string> }];
+    expect(url).toContain("api.groq.com");
+    expect(init.headers.Authorization).toContain("Bearer ");
+
+    const body = JSON.parse(init.body) as { model: string; temperature: number; max_tokens: number };
+    expect(body.model).toBe("llama3-8b-8192");
+    expect(body.temperature).toBe(0.4);
+    expect(body.max_tokens).toBe(2000);
+  });
+
+  it("groqChat usa los parámetros propios de cada personalidad (Dáctilo: 0.8 / 1800)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "ok" } }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const dactilo = PERSONALIDADES.find((p) => p.id === "dactilo") as Personalidad;
+    await groqChat(settingsCloud, [{ role: "user", content: "hola" }], dactilo);
+
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, { body: string }])[1].body) as {
+      temperature: number;
+      max_tokens: number;
+    };
+    expect(body.temperature).toBe(0.8);
+    expect(body.max_tokens).toBe(1800);
+  });
+
+  it("ollamaChat mapea temperatura y num_predict de la personalidad", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ message: { content: "respuesta local" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ledger = PERSONALIDADES.find((p) => p.id === "ledger") as Personalidad;
+    const out = await ollamaChat(DEFAULT_SETTINGS, [{ role: "user", content: "hola" }], ledger);
+
+    expect(out).toBe("respuesta local");
+    const body = JSON.parse((fetchMock.mock.calls[0] as [string, { body: string }])[1].body) as {
+      model: string;
+      options: { temperature: number; num_predict: number };
+    };
+    expect(body.model).toBe("llama3.2");
+    expect(body.options.temperature).toBe(0.4);
+    expect(body.options.num_predict).toBe(2000);
+  });
+
+  it("groqChat lanza cuando la API no devuelve choices válidos", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ledger = PERSONALIDADES.find((p) => p.id === "ledger") as Personalidad;
+    await expect(groqChat(settingsCloud, [{ role: "user", content: "hola" }], ledger)).rejects.toThrow();
   });
 });

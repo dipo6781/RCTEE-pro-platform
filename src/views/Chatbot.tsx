@@ -1,10 +1,11 @@
 /* ────────────────────────────────────────────────────────────────────────────
    R-C-T-E-E PRO · Chatbot IA
-   8 personalidades especializadas · Groq (cloud) / Ollama (local) / respaldo.
+   8 agentes adaptativos (tono, enfoque, capacidades, restricciones, few-shot,
+   temperatura y maxTokens dinámicos) · Groq (cloud) / Ollama (local) / respaldo.
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useRef, useState } from "react";
-import { PERSONAS } from "../data";
+import { PERSONALIDADES, type Personalidad } from "../data";
 import { askAI, delay, uid, type ChatMsg, type Settings } from "../engine";
 import { Icon } from "../chrome";
 import { CopyBtn } from "../ui";
@@ -27,11 +28,11 @@ export default function Chatbot({
   setMessages: (m: ChatMsg[]) => void;
   notify: (m: string, k?: "ok" | "warn" | "err") => void;
 }) {
-  const [personaId, setPersonaId] = useState(PERSONAS[0].id);
+  /* El estado conserva el objeto Personalidad completo, no solo el id */
+  const [persona, setPersona] = useState<Personalidad>(PERSONALIDADES[0]);
   const [texto, setTexto] = useState("");
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const persona = PERSONAS.find((p) => p.id === personaId) ?? PERSONAS[0];
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -42,7 +43,7 @@ export default function Chatbot({
     const contenido = (raw ?? texto).trim();
     if (contenido.length === 0 || typing) return;
     setTexto("");
-    const userMsg: ChatMsg = { id: uid(), role: "user", content: contenido, personaId, ts: Date.now() };
+    const userMsg: ChatMsg = { id: uid(), role: "user", content: contenido, personaId: persona.id, ts: Date.now() };
     const withUser = [...messages, userMsg];
     setMessages(withUser);
     setTyping(true);
@@ -51,7 +52,7 @@ export default function Chatbot({
       const res = await askAI(settings, persona, withUser, contenido);
       const elapsed = Date.now() - started;
       if (elapsed < 900) await delay(900 - elapsed);
-      setMessages([...withUser, { id: uid(), role: "assistant", content: res.text, personaId, engine: res.engine, ts: Date.now() }]);
+      setMessages([...withUser, { id: uid(), role: "assistant", content: res.text, personaId: persona.id, engine: res.engine, ts: Date.now() }]);
     } catch {
       setMessages([
         ...withUser,
@@ -59,7 +60,7 @@ export default function Chatbot({
           id: uid(),
           role: "assistant",
           content: "Se produjo un error inesperado al consultar el motor. Inténtalo de nuevo; si persiste, revisa la configuración en Ajustes.",
-          personaId,
+          personaId: persona.id,
           engine: "error",
           ts: Date.now(),
         },
@@ -72,70 +73,121 @@ export default function Chatbot({
 
   return (
     <div className="flex h-[calc(100vh-140px)] min-h-[540px] flex-col gap-4 lg:flex-row">
-      {/* ── Personalidades ── */}
-      <aside className="panel flex shrink-0 gap-1.5 overflow-x-auto p-2 lg:w-[264px] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible">
+      {/* ── Selector de agentes ── */}
+      <aside className="panel flex shrink-0 gap-1.5 overflow-x-auto p-2 lg:w-[280px] lg:flex-col lg:overflow-y-auto lg:overflow-x-visible">
         <p className="hidden px-2.5 pb-1 pt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-mist lg:block">
-          Personalidades · {PERSONAS.length}
+          Agentes adaptativos · {PERSONALIDADES.length}
         </p>
-        {PERSONAS.map((p) => {
-          const active = p.id === personaId;
+        {PERSONALIDADES.map((p) => {
+          const active = p.id === persona.id;
           return (
             <button
               key={p.id}
-              onClick={() => setPersonaId(p.id)}
-              className={`press flex shrink-0 items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors lg:w-full ${
-                active ? "bg-pine text-paper" : "hover:bg-line/50"
+              onClick={() => {
+                setPersona(p);
+                notify(`Agente activo: ${p.nombre} · t=${p.temperatura}`, "ok");
+              }}
+              title={p.descripcion}
+              className={`press flex shrink-0 items-center gap-3 rounded-md px-2.5 py-2 text-left transition-all lg:w-full ${
+                active ? "bg-pine text-paper shadow-[0_8px_20px_-10px_rgba(10,18,14,0.8)]" : "hover:bg-line/50"
               }`}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md font-display text-[13px] font-extrabold text-surface"
-                style={{ backgroundColor: p.hex }}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-surface transition-transform duration-300"
+                style={{
+                  backgroundColor: p.hex,
+                  transform: active ? "rotate(-4deg) scale(1.06)" : undefined,
+                }}
               >
-                {p.nombre.slice(0, 2).toUpperCase()}
+                <Icon name={p.icono} className="h-[18px] w-[18px]" />
               </span>
               <span className="min-w-0 hidden sm:block lg:block">
-                <span className={`block font-display text-[13.5px] font-bold ${active ? "text-paper" : "text-ink"}`}>{p.nombre}</span>
-                <span className={`block truncate text-[10.5px] ${active ? "text-paper/55" : "text-mist"}`}>{p.area}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className={`font-display text-[13.5px] font-bold ${active ? "text-paper" : "text-ink"}`}>{p.nombre}</span>
+                  <span
+                    className="rounded px-1 py-px font-mono text-[8.5px] font-bold uppercase tracking-wide"
+                    style={{ backgroundColor: active ? "rgba(251,252,247,0.14)" : `${p.hex}1f`, color: active ? "#7ee2b4" : p.hex }}
+                  >
+                    {p.tono.slice(0, 4)}
+                  </span>
+                </span>
+                <span className={`block truncate text-[10.5px] ${active ? "text-paper/55" : "text-mist"}`}>{p.descripcion}</span>
               </span>
             </button>
           );
         })}
+        <div className="mt-auto hidden rounded-md bg-paper/70 px-3 py-2.5 lg:block">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-mist">Parámetros del agente</p>
+          <div className="mt-1.5 grid grid-cols-2 gap-1 font-mono text-[10px] text-ink/75">
+            <span>temp <b style={{ color: persona.hex }}>{persona.temperatura}</b></span>
+            <span>tokens <b style={{ color: persona.hex }}>{persona.maxTokens}</b></span>
+            <span>enfoque <b className="capitalize">{persona.enfoque}</b></span>
+            <span>{persona.adaptativo ? <b className="text-jade">adaptativo</b> : <b className="text-mist">estable</b>}</span>
+          </div>
+        </div>
       </aside>
 
       {/* ── Conversación ── */}
       <div className="panel flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-line bg-pine px-4 py-3 text-paper">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md font-display text-[12px] font-extrabold text-surface" style={{ backgroundColor: persona.hex }}>
-            {persona.nombre.slice(0, 2).toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="font-display text-[14.5px] font-extrabold">{persona.nombre} · {persona.area}</p>
-            <p className="truncate font-mono text-[10px] text-paper/50">{persona.tono}</p>
+        <div className="border-b border-line bg-pine px-4 py-3 text-paper">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md text-surface" style={{ backgroundColor: persona.hex }}>
+              <Icon name={persona.icono} className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="font-display text-[14.5px] font-extrabold">
+                {persona.nombre} · {persona.area}
+              </p>
+              <p className="truncate font-mono text-[10px] text-paper/50">{persona.descripcion}</p>
+            </div>
+            <span className="hidden rounded-full bg-pine-3 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-[#7ee2b4] sm:block">
+              {settings.mode === "cloud" ? "Groq" : "Ollama"} activo
+            </span>
+            <button
+              onClick={() => {
+                setMessages([]);
+                notify("Conversación reiniciada", "warn");
+              }}
+              className="press rounded-md p-1.5 text-paper/60 hover:bg-pine-3 hover:text-paper"
+              title="Limpiar conversación"
+            >
+              <Icon name="refresh" className="h-4 w-4" />
+            </button>
           </div>
-          <span className="hidden rounded-full bg-pine-3 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-[#7ee2b4] sm:block">
-            {settings.mode === "cloud" ? "Groq" : "Ollama"} activo
-          </span>
-          <button
-            onClick={() => {
-              setMessages([]);
-              notify("Conversación reiniciada", "warn");
-            }}
-            className="press rounded-md p-1.5 text-paper/60 hover:bg-pine-3 hover:text-paper"
-            title="Limpiar conversación"
-          >
-            <Icon name="refresh" className="h-4 w-4" />
-          </button>
+          {/* chips de metadatos del agente activo */}
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-pine-3/80 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-paper/75">
+              tono · {persona.tono}
+            </span>
+            <span className="rounded-full bg-pine-3/80 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-paper/75">
+              enfoque · {persona.enfoque}
+            </span>
+            <span className="rounded-full bg-pine-3/80 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-paper/75">
+              temperatura · {persona.temperatura}
+            </span>
+            <span className="rounded-full bg-pine-3/80 px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide text-paper/75">
+              máx · {persona.maxTokens} tok
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wide ${
+                persona.adaptativo ? "bg-[#7ee2b4]/15 text-[#7ee2b4]" : "bg-pine-3/80 text-paper/55"
+              }`}
+            >
+              {persona.adaptativo ? "adaptativo ✓" : "formato estable"}
+            </span>
+          </div>
         </div>
 
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
           {messages.length === 0 && (
             <div className="mx-auto max-w-md pt-8 text-center">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg font-display text-xl font-extrabold text-surface" style={{ backgroundColor: persona.hex }}>
-                {persona.nombre.slice(0, 2).toUpperCase()}
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg text-surface" style={{ backgroundColor: persona.hex }}>
+                <Icon name={persona.icono} className="h-6 w-6" />
               </span>
               <p className="mt-4 font-display text-[17px] font-extrabold text-ink">Canal abierto con {persona.nombre}</p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-mist">
-                {persona.tono}. Consulta sobre prompts, precios, clientes o pide ejemplos de {persona.area.toLowerCase()}.
+              <p className="mt-1.5 text-[13px] leading-relaxed text-mist">{persona.descripcion}</p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-mist/70">
+                {persona.capacidades.length} capacidades · {persona.restricciones.length} restricciones · {persona.ejemplos.length} ejemplo{persona.ejemplos.length === 1 ? "" : "s"} calibrado{persona.ejemplos.length === 1 ? "" : "s"}
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {SUGERENCIAS.map((s) => (
@@ -162,9 +214,9 @@ export default function Chatbot({
               <div key={m.id} className="anim-pop flex justify-start">
                 <div className="max-w-[88%] rounded-lg rounded-bl-sm border border-line bg-surface px-4 py-3 shadow-sm">
                   <div className="mb-1.5 flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PERSONAS.find((p) => p.id === m.personaId)?.hex ?? "#0f7a55" }} />
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PERSONALIDADES.find((p) => p.id === m.personaId)?.hex ?? "#0f7a55" }} />
                     <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.14em] text-mist">
-                      {PERSONAS.find((p) => p.id === m.personaId)?.nombre ?? "Asistente"}
+                      {PERSONALIDADES.find((p) => p.id === m.personaId)?.nombre ?? "Asistente"}
                     </span>
                     {m.engine && <span className="ml-auto font-mono text-[9px] uppercase tracking-wide text-line-2">{m.engine}</span>}
                   </div>
@@ -179,14 +231,17 @@ export default function Chatbot({
 
           {typing && (
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md font-display text-[11px] font-extrabold text-surface" style={{ backgroundColor: persona.hex }}>
-                {persona.nombre.slice(0, 2).toUpperCase()}
+              <span className="flex h-8 w-8 items-center justify-center rounded-md text-surface" style={{ backgroundColor: persona.hex }}>
+                <Icon name={persona.icono} className="h-4 w-4" />
               </span>
               <div className="flex items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-2.5">
                 {[0, 1, 2].map((i) => (
                   <span key={i} className="typing-dot h-1.5 w-1.5 rounded-full bg-mist" />
                 ))}
               </div>
+              <span className="font-mono text-[10px] text-mist">
+                {persona.nombre} razona · t={persona.temperatura}
+              </span>
             </div>
           )}
         </div>
@@ -217,7 +272,7 @@ export default function Chatbot({
             </button>
           </div>
           <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-mist">
-            Motor: {settings.mode === "cloud" ? `Groq · ${settings.groqModel}` : `Ollama · ${settings.ollamaModel}`} con respaldo local determinista
+            Motor: {settings.mode === "cloud" ? `Groq · ${settings.groqModel}` : `Ollama · ${settings.ollamaModel}`} · t={persona.temperatura} · {persona.maxTokens} tok · respaldo local determinista
           </p>
         </div>
       </div>

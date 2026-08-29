@@ -4,7 +4,7 @@
    clientes Groq / Ollama con respaldo local, persistencia y exportación.
    ──────────────────────────────────────────────────────────────────────────── */
 
-import type { CamposRCTEE, FormatoId, Persona, PrecisionId } from "./data";
+import type { CamposRCTEE, EnfoquePersonalidad, FormatoId, Personalidad, PrecisionId, TonoPersonalidad } from "./data";
 import { VERSION } from "./data";
 
 /* ── Tipos globales ────────────────────────────────────────────────────────── */
@@ -407,7 +407,61 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Pro
   }
 }
 
-export async function groqChat(settings: Settings, messages: { role: string; content: string }[]): Promise<string> {
+/* ── Construcción dinámica del system message por personalidad ─────────────── */
+
+export const TONO_INSTRUCCIONES: Record<TonoPersonalidad, string> = {
+  profesional: "Mantén un tono formal y preciso; prioriza la exactitud sobre la cercanía.",
+  cercano: "Habla de tú, con calidez y frases cortas; evita formalismos vacíos.",
+  tecnico: "Usa terminología técnica con rigor y define cada término la primera vez que aparezca.",
+  creativo: "Escribe con ritmo y ángulos inesperados; muestra alternativas en lugar de una sola vía.",
+  ejecutivo: "Ve al punto: decisión, impacto y próximo paso; elimina todo relleno.",
+  empatico: "Valida la situación de la persona antes de proponer; lenguaje humano, sin paternalismo.",
+};
+
+export const ENFOQUE_INSTRUCCIONES: Record<EnfoquePersonalidad, string> = {
+  resolutivo: "Cierra siempre con una acción concreta y ejecutable hoy.",
+  analitico: "Descompón el problema en partes y evidencia antes de concluir.",
+  creativo: "Genera varias opciones divergentes y señala la más prometedora.",
+  estrategico: "Conecta cada respuesta con objetivos de negocio y su horizonte temporal.",
+  diagnostico: "Identifica primero la causa raíz; distingue síntomas de problemas.",
+};
+
+/**
+ * Concatena dinámicamente: prompt base + tono + enfoque + capacidades +
+ * restricciones + ejemplos (si existen) + directriz de adaptabilidad.
+ */
+export function buildSystemMessage(p: Personalidad): string {
+  const partes: string[] = [
+    p.systemPrompt,
+    `## TONO\n${TONO_INSTRUCCIONES[p.tono]}`,
+    `## ENFOQUE\n${ENFOQUE_INSTRUCCIONES[p.enfoque]}`,
+  ];
+  if (p.capacidades.length > 0) {
+    partes.push(`## CAPACIDADES\n${p.capacidades.map((c) => `- ${c}`).join("\n")}`);
+  }
+  if (p.restricciones.length > 0) {
+    partes.push(`## RESTRICCIONES (obligatorias)\n${p.restricciones.map((r) => `- ${r}`).join("\n")}`);
+  }
+  if (p.ejemplos.length > 0) {
+    partes.push(`## EJEMPLOS DE REFERENCIA\n${p.ejemplos.join("\n\n")}`);
+  }
+  partes.push(
+    `## ADAPTABILIDAD\n${
+      p.adaptativo
+        ? "Ajusta la profundidad y la estructura de cada respuesta al nivel de detalle que demuestre el usuario: breve con expertos, didáctico con principiantes."
+        : "Mantén un formato estable y predecible en todas las respuestas; no varíes la estructura aunque cambie el tema."
+    }`
+  );
+  return partes.join("\n\n");
+}
+
+/* ── Clientes de IA con parámetros dinámicos por personalidad ──────────────── */
+
+export async function groqChat(
+  settings: Settings,
+  messages: { role: string; content: string }[],
+  persona: Personalidad
+): Promise<string> {
   const res = await fetchWithTimeout(
     "https://api.groq.com/openai/v1/chat/completions",
     {
@@ -416,7 +470,12 @@ export async function groqChat(settings: Settings, messages: { role: string; con
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.groqKey}`,
       },
-      body: JSON.stringify({ model: settings.groqModel, messages, temperature: 0.7, max_tokens: 640 }),
+      body: JSON.stringify({
+        model: settings.groqModel,
+        messages,
+        temperature: persona.temperatura,
+        max_tokens: persona.maxTokens,
+      }),
     },
     14000
   );
@@ -427,13 +486,22 @@ export async function groqChat(settings: Settings, messages: { role: string; con
   return out;
 }
 
-export async function ollamaChat(settings: Settings, messages: { role: string; content: string }[]): Promise<string> {
+export async function ollamaChat(
+  settings: Settings,
+  messages: { role: string; content: string }[],
+  persona: Personalidad
+): Promise<string> {
   const res = await fetchWithTimeout(
     `${settings.ollamaUrl.replace(/\/$/, "")}/api/chat`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: settings.ollamaModel, messages, stream: false }),
+      body: JSON.stringify({
+        model: settings.ollamaModel,
+        messages,
+        stream: false,
+        options: { temperature: persona.temperatura, num_predict: persona.maxTokens },
+      }),
     },
     20000
   );
@@ -455,7 +523,7 @@ export async function pingOllama(url: string): Promise<boolean> {
 
 /* ── Motor local de respaldo (determinista, basado en R-C-T-E-E) ───────────── */
 
-export function localReply(persona: Persona, userText: string, turn: number): string {
+export function localReply(persona: Personalidad, userText: string, turn: number): string {
   const t = userText.toLowerCase();
   const firma = `— **${persona.nombre}** · ${persona.area}`;
 
@@ -505,17 +573,18 @@ export interface AskResult {
   engine: string;
 }
 
-export async function askAI(settings: Settings, persona: Persona, history: ChatMsg[], userText: string): Promise<AskResult> {
+export async function askAI(settings: Settings, persona: Personalidad, history: ChatMsg[], userText: string): Promise<AskResult> {
   const messages = [
-    { role: "system", content: persona.system },
+    { role: "system", content: buildSystemMessage(persona) },
     ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: userText },
   ];
+  const params = ` · t=${persona.temperatura} · ${persona.maxTokens} tok`;
 
   if (settings.mode === "cloud" && settings.groqKey.trim().length > 8) {
     try {
-      const text = await groqChat(settings, messages);
-      return { text, engine: `Groq · ${settings.groqModel}` };
+      const text = await groqChat(settings, messages, persona);
+      return { text, engine: `Groq · ${settings.groqModel}${params}` };
     } catch {
       return { text: localReply(persona, userText, history.length) + FALLBACK_NOTE, engine: "Motor local (Groq no disponible)" };
     }
@@ -523,8 +592,8 @@ export async function askAI(settings: Settings, persona: Persona, history: ChatM
 
   if (settings.mode === "local") {
     try {
-      const text = await ollamaChat(settings, messages);
-      return { text, engine: `Ollama · ${settings.ollamaModel}` };
+      const text = await ollamaChat(settings, messages, persona);
+      return { text, engine: `Ollama · ${settings.ollamaModel}${params}` };
     } catch {
       return { text: localReply(persona, userText, history.length) + FALLBACK_NOTE, engine: "Motor local (Ollama sin conexión)" };
     }
