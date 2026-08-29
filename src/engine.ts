@@ -25,6 +25,7 @@ export interface Settings {
   supabaseKey: string;
   syncEnabled: boolean;
   lastSync: number | null;
+  extensions: string[];
 }
 
 export type Fuente = "clasico" | "enterprise" | "plantilla";
@@ -64,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   supabaseKey: "",
   syncEnabled: false,
   lastSync: null,
+  extensions: [],
 };
 
 /* ── Fusión de historiales local ↔ remoto (gana el registro más reciente) ──── */

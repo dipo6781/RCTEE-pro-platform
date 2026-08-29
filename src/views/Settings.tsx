@@ -4,7 +4,7 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useState } from "react";
-import { FORMATOS, type FormatoId } from "../data";
+import { EXTENSIONES, FORMATOS, TEMAS, type FormatoId } from "../data";
 import { copyText, pingOllama, timeAgo, type HistoryItem, type Settings as TSettings } from "../engine";
 import { SQL_SCHEMA, sbTest } from "../supabase";
 import { Icon, ViewHeader } from "../chrome";
@@ -75,6 +75,21 @@ export default function SettingsView({
     setSqlCopied(ok);
     notify(ok ? "SQL del esquema copiado al portapapeles" : "No se pudo copiar", ok ? "ok" : "err");
     setTimeout(() => setSqlCopied(false), 1800);
+  };
+
+  const activadas = settings.extensions ?? [];
+  const toggleExt = (id: string) => {
+    const ext = EXTENSIONES.find((e) => e.id === id);
+    const on = activadas.includes(id);
+    update({ extensions: on ? activadas.filter((x) => x !== id) : [...activadas, id] });
+    if (ext) {
+      notify(
+        on
+          ? `Extensión «${ext.nombre}» desactivada`
+          : `«${ext.nombre}» activada · ${ext.subtema.plantillas.length} plantillas nuevas en el módulo Plantillas`,
+        on ? "warn" : "ok"
+      );
+    }
   };
 
   const inputCls =
@@ -315,6 +330,70 @@ export default function SettingsView({
           </Reveal>
         </div>
       </div>
+
+      {/* ── Sistema de Extensiones ── */}
+      <Reveal className="mt-6">
+        <section className="panel overflow-hidden">
+          <div className="flex flex-wrap items-center gap-3 border-b border-line bg-pine px-6 py-4 text-paper">
+            <Icon name="spark" className="h-5 w-5 text-[#ecc06a]" />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display text-[17px] font-extrabold">Sistema de Extensiones</h3>
+              <p className="font-mono text-[10.5px] text-paper/55">Módulos opcionales de plantillas · activación instantánea · persisten en tu navegador</p>
+            </div>
+            <span className="rounded-full bg-pine-3 px-3 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wide text-[#ecc06a]">
+              {activadas.length}/{EXTENSIONES.length} activas
+            </span>
+          </div>
+          <div className="grid gap-4 p-6 md:grid-cols-3">
+            {EXTENSIONES.map((e) => {
+              const on = activadas.includes(e.id);
+              const tema = TEMAS.find((t) => t.id === e.temaDestino);
+              return (
+                <div
+                  key={e.id}
+                  className={`group relative flex flex-col rounded-lg border p-5 transition-all duration-300 ${on ? "" : "border-line bg-paper/60 hover:border-line-2"}`}
+                  style={on ? { borderColor: e.hex, backgroundColor: `${e.hex}0d`, boxShadow: `0 16px 36px -20px ${e.hex}88` } : undefined}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-surface transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105" style={{ backgroundColor: e.hex }}>
+                      <Icon name={e.icono} className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 font-display text-[15.5px] font-extrabold text-ink">
+                        {e.nombre}
+                        <span className="rounded bg-line/70 px-1.5 py-0.5 font-mono text-[9px] font-bold text-mist">v{e.version}</span>
+                      </p>
+                      <p className="mt-0.5 text-[12px] leading-snug text-mist">{e.desc}</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 font-mono text-[10.5px] font-semibold uppercase tracking-wide" style={{ color: e.hex }}>
+                    +{e.subtema.plantillas.length} plantillas → {tema?.nombre ?? e.temaDestino}
+                  </p>
+                  <button
+                    onClick={() => toggleExt(e.id)}
+                    className={`press mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 font-mono text-xs font-bold transition-colors ${
+                      on ? "bg-ink text-paper hover:bg-danger" : "text-surface"
+                    }`}
+                    style={on ? undefined : { backgroundColor: e.hex }}
+                    title={on ? "Desactivar extensión" : "Activar extensión"}
+                  >
+                    {on ? (
+                      <>
+                        <Icon name="check" className="h-3.5 w-3.5" /> Activada · click para quitar
+                      </>
+                    ) : (
+                      "Activar extensión"
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="border-t border-line bg-paper/60 px-6 py-3 font-mono text-[10.5px] leading-relaxed text-mist">
+            Las extensiones inyectan sus subtemas en el catálogo de Plantillas con la insignia <span className="font-bold text-ink">EXT</span>. Puedes componer prompts híbridos: plantilla base + calibración de nicho en el Generador Clásico.
+          </p>
+        </section>
+      </Reveal>
 
       {/* ── Sincronización Supabase ── */}
       <Reveal className="mt-6">

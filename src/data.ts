@@ -788,6 +788,202 @@ export const TEMAS: Tema[] = [
   },
 ];
 
+/* ── Sistema de Extensiones · módulos opcionales de plantillas ─────────────── */
+
+export interface ExtensionDef {
+  id: string;
+  nombre: string;
+  version: string;
+  desc: string;
+  hex: string;
+  icono: string;
+  temaDestino: string;
+  subtema: Subtema;
+}
+
+export const EXTENSIONES: ExtensionDef[] = [
+  {
+    id: "ext-whatsapp",
+    nombre: "WhatsApp Business",
+    version: "1.2",
+    desc: "Comercio conversacional: recuperación de carritos, cierre por catálogo y respuestas guardadas.",
+    hex: "#128c7e",
+    icono: "wa",
+    temaDestino: "mkt",
+    subtema: {
+      id: "wa-conversacional",
+      nombre: "Comercio conversacional",
+      plantillas: [
+        P(
+          "wa-01",
+          "Recuperación de carrito por WhatsApp",
+          "Secuencia de 3 toques sin sonar a spam",
+          {
+            rol: "Especialista en comercio conversacional con 6 años recuperando carritos vía WhatsApp sin bloqueos de cuenta ni quejas de spam.",
+            contexto:
+              "La tienda de {producto} abandona el 74 % de sus carritos. El cliente ya dio su número en checkout pero no compró. Hay una ventana legal de 24 h para escribirle tras su última interacción y un descuento máximo autorizado de {descuento_max} %.",
+            tarea: "Escribir la secuencia de 3 mensajes de recuperación (hora 1, hora 24, hora 72) con personalización por {nombre_cliente}, prueba social y cierre directo al pago.",
+            especificaciones:
+              "Cada mensaje en 3 burbujas máximas de 3 líneas. El descuento solo aparece en el mensaje 3. Prohibido el texto-wall y los emojis en cadena. Incluir las condiciones de supresión: quién NO recibe el mensaje 2.",
+            ejemplos:
+              "Mensaje 1 (h1): «{nombre_cliente}, tu {producto} sigue apartado 🙌 ¿Te quedó alguna duda con el envío?» → sin descuento, abre conversación.",
+          }
+        ),
+        P(
+          "wa-02",
+          "Guion de cierre por catálogo",
+          "Convierte el chat en pedido con el catálogo en pantalla",
+          {
+            rol: "Closer de ventas por WhatsApp para comercios de {rubro} con ticket promedio de {ticket_promedio}; cierro mostrando el catálogo, no recitando precios.",
+            contexto:
+              "El equipo de 3 vendedores atiende 90 chats diarios y cierra el 9 %. El cliente llega frío desde un anuncio y el catálogo de WhatsApp ya está configurado con fotos y precios, pero nadie lo usa como herramienta de cierre.",
+            tarea: "Diseñar el guion de cierre en 5 pasos: calificación en 2 preguntas, anclaje con el catálogo, comparación de 2 opciones, manejo de «está caro» y cierre con {metodo_pago}.",
+            especificaciones:
+              "Incluir el momento exacto para enviar el link del catálogo (no antes del minuto 2). Frases literales entre comillas. Cierre con link de pago o transferencia, nunca «avísame si te interesa».",
+            ejemplos:
+              "Comparación: «Mira, el modelo A es el que más sale [catálogo, ítem 4]; el B tiene garantía extendida. ¿Cuál se parece más a lo que buscabas?» → pregunta binaria, no abierta.",
+          }
+        ),
+        P(
+          "wa-03",
+          "Respuestas guardadas y menú de atención",
+          "Respuestas en 30 segundos, 24/7",
+          {
+            rol: "Operadora de atención al cliente por WhatsApp que estandarizó el servicio de {negocio}: 90 % de consultas resueltas sin intervención humana.",
+            contexto:
+              "{negocio} recibe 60 consultas diarias repetitivas (horarios, envíos, cambios) y tarda 45 minutos en responder porque cada agente redacta desde cero. El horario real es {horario} y el punto de retiro es {ubicacion}.",
+            tarea: "Construir el set de 10 respuestas guardadas con atajos (/envio, /horario, /cambio…) + el mensaje de bienvenida con menú numerado de opciones + el mensaje fuera de horario.",
+            especificaciones:
+              "Cada respuesta: atajo, texto final con variables entre corchetes, y regla de escalamiento a humano. El menú de bienvenida con máximo 5 opciones numeradas. Tono cálido pero sin diminutivos.",
+            ejemplos:
+              "Atajo /envio → «¡Hola! 🚚 Hacemos envíos a todo el país en 24–72 h. El costo se calcula en checkout según tu código postal. ¿Me pasas el tuyo y te cotizo al instante?»",
+          }
+        ),
+      ],
+    },
+  },
+  {
+    id: "ext-legal",
+    nombre: "Legal Shield",
+    version: "1.0",
+    desc: "Protección avanzada: cláusula LGPD, NDA mutuo y términos SaaS con SLA ejecutable.",
+    hex: "#475569",
+    icono: "shield",
+    temaDestino: "leg",
+    subtema: {
+      id: "ls-proteccion",
+      nombre: "Protección de datos",
+      plantillas: [
+        P(
+          "ls-01",
+          "Cláusula de tratamiento de datos",
+          "Cumplimiento LGPD/GDPR listo para contrato",
+          {
+            rol: "Abogada de privacidad de datos con 9 años redactando cláusulas de tratamiento conforme a la normativa de {pais} y auditorías de cumplimiento.",
+            contexto:
+              "{empresa} firma contratos de servicio que incluyen acceso a datos personales de clientes del contratante, pero sus contratos actuales no mencionan el tratamiento de datos. La primera auditoría de un cliente enterprise es en 60 días.",
+            tarea: "Redactar la cláusula completa de tratamiento de datos: definiciones, finalidad limitada a {finalidad_datos}, obligaciones del encargado, subencargados, notificación de incidentes en 72 h y devolución/destrucción al término.",
+            especificaciones:
+              "Lenguaje contractual ejecutable, numeración correlativa para insertar en contrato marco. Prohibido copiar literalmente artículos de ley sin referencia. Incluir nota de negociación: qué puntos son innegociables.",
+            ejemplos:
+              "Incidentes: «El Encargado notificará al Responsable en un plazo máximo de 72 horas desde la detección, indicando naturaleza, categorías de datos afectados y medidas de contención aplicadas».",
+          }
+        ),
+        P(
+          "ls-02",
+          "NDA mutuo para alianzas",
+          "Confidencialidad balanceada en 2 páginas",
+          {
+            rol: "Abogado corporativo especializado en acuerdos de confidencialidad para alianzas tecnológicas; 14 años, más de 300 NDAs negociados.",
+            contexto:
+              "{parte_a} y {parte_b} exploran una alianza comercial que implica compartir roadmap, precios y datos de clientes durante la evaluación. Se requiere un NDA mutuo de {vigencia_anios} años que ninguna de las dos partes sienta desbalanceado.",
+            tarea: "Redactar el NDA mutuo completo: definición de información confidencial con 5 exclusiones estándar, obligaciones de cuidado razonable, plazo de confidencialidad, remedios por incumplimiento y ley aplicable.",
+            especificaciones:
+              "Máximo 2 páginas. Cláusulas espejo: lo que aplica a una parte aplica a la otra. Incluir la exclusión de información ya pública y desarrollo independiente. Señalar 2 «trampas» comunes en NDAs de la contraparte.",
+            ejemplos:
+              "Exclusión estándar: «Información que la Parte Receptora pueda demostrar que desarrolló independientemente, sin uso ni referencia a la Información Confidencial de la Parte Reveladora».",
+          }
+        ),
+        P(
+          "ls-03",
+          "Términos de uso SaaS con SLA",
+          "ToS que el enterprise acepta sin renegociar",
+          {
+            rol: "Abogada de producto SaaS que redacta términos de uso aprobados por comités de compras enterprise; 11 años en software B2B.",
+            contexto:
+              "{saas} vende a empresas medianas y su área legal recibe 5 revisiones contractuales al mes porque los términos actuales generan dudas de seguridad y disponibilidad. El objetivo de disponibilidad comprometido es {disponibilidad_objetivo} % y la jurisdicción es {jurisdiccion}.",
+            tarea: "Redactar los términos de uso: licencia de uso, SLA con créditos de servicio escalonados, propiedad intelectual del contenido del cliente, limitación de responsabilidad, suspensión por impago y terminación con portabilidad de datos.",
+            especificaciones:
+              "SLA en tabla: disponibilidad × crédito × mecanismo de reclamo. Prohibido lenguaje unilateral abusivo («podemos cambiar todo en cualquier momento» sin aviso). Incluir cláusula de portabilidad de datos en 30 días.",
+            ejemplos:
+              "SLA: «< 99.0 % mensual → crédito del 10 % de la factura del mes; < 95.0 % → crédito del 30 % y derecho de terminación sin penalidad».",
+          }
+        ),
+      ],
+    },
+  },
+  {
+    id: "ext-kpi",
+    nombre: "KPIs Avanzados",
+    version: "2.0",
+    desc: "Analítica ejecutiva: forecast de caja 13 semanas, cohortes de retención y tablero OKR.",
+    hex: "#e11d48",
+    icono: "gauge",
+    temaDestino: "fin",
+    subtema: {
+      id: "kpi-analitica",
+      nombre: "Analítica ejecutiva",
+      plantillas: [
+        P(
+          "kpi-01",
+          "Forecast de caja a 13 semanas",
+          "El tablero semanal que evita la sorpresa de caja",
+          {
+            rol: "Tesorero corporativo con 13 años gestionando liquidez; experto en forecasts rodantes de 13 semanas que la dirección realmente usa.",
+            contexto:
+              "{empresa} opera con visibilidad de caja de solo 2 semanas y ha sufrido 2 sorpresas de liquidez este año. Su ciclo de cobro es de {ciclo_cobro_dias} días y el runway actual es de {runway_meses} meses al ritmo de gasto vigente.",
+            tarea: "Diseñar el forecast de caja a 13 semanas: estructura de entradas/salidas por categoría, supuestos por línea, semáforo de alertas y el ritual semanal de actualización de 30 minutos.",
+            especificaciones:
+              "Plantilla en formato tabla semanal (13 columnas). Cada categoría con su driver (no montos fijos). Semáforo: rojo si caja proyectada < 6 semanas de gastos fijos. Incluir 3 escenarios: base, pesimista (−20 % cobros), optimista.",
+            ejemplos:
+              "Línea modelo: «Cobros = facturación semana N−{ciclo_cobro_dias}/7 × probabilidad de cobro 92 %; ajustar manualmente los 10 clientes top por fecha prometida».",
+          }
+        ),
+        P(
+          "kpi-02",
+          "Análisis de cohortes de retención",
+          "Retención mes a mes sin engañarse con promedios",
+          {
+            rol: "Analista de producto especializado en cohortes de retención para {producto}; convierto tablas de cohortes en decisiones de roadmap.",
+            contexto:
+              "{producto} reporta una retención promedio del 78 %, pero el número esconde que los clientes que llegan por el canal de descuentos abandonan al doble de velocidad. Se analizarán las cohortes desde {cohorte_inicial} durante {meses_analisis} meses.",
+            tarea: "Construir el análisis de cohortes: matriz mes 0 a {meses_analisis} por cohorte mensual, curva de retención por canal de adquisición, identificación del punto de estabilización y 3 hipótesis accionables.",
+            especificaciones:
+              "Matriz con colores por intensidad (verde > 70 %, ámbar 50–70 %, rojo < 50 %). Prohibido el promedio simple como métrica única. Incluir definición exacta de «activo» y las cohortes mínimas por canal para que sean comparables (n ≥ 30).",
+            ejemplos:
+              "Lectura modelo: «La cohorte de marzo cae al 41 % en el mes 2 vs 58 % del benchmark interno; driver: 70 % de esa cohorte entró por la promo de −40 %».",
+          }
+        ),
+        P(
+          "kpi-03",
+          "Tablero OKR trimestral",
+          "Objetivos que se revisan, no que se archivan",
+          {
+            rol: "Coach de OKRs con 8 años implementando el sistema en empresas de {empresa} a escala; alérgico a los OKRs de decoración.",
+            contexto:
+              "{empresa} definirá {objetivo_principal} como prioridad del trimestre con {equipos} equipos participando. En los 2 ciclos previos, el 60 % de los key results quedaron sin actualizar después de la semana 3 y la revisión trimestral se canceló.",
+            tarea: "Diseñar el tablero OKR del trimestre: 2–3 objetivos por equipo con 3 resultados clave medibles cada uno, sistema de semáforo semanal, plantilla de check-in de 15 minutos y reglas de cierre de ciclo.",
+            especificaciones:
+              "Cada KR: métrica, línea base, meta y owner. Prohibido KRs binarios («lanzar X»); todo con número. Check-in semanal: qué movió la métrica, qué se bloquea, qué se pide. Incluir la pregunta anti-decoración del cierre: «¿cambiamos alguna decisión con esto?».",
+            ejemplos:
+              "KR modelo: «Reducir churn mensual de 3,9 % a 2,8 % (base 3,9 %, meta 2,8 %, owner: Head de CS)» → verde ≥ 85 % del avance esperado, ámbar 60–85 %, rojo < 60 %.",
+          }
+        ),
+      ],
+    },
+  },
+];
+
 /* ── Nichos rentables ──────────────────────────────────────────────────────── */
 
 export interface Nicho {

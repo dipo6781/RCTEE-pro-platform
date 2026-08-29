@@ -43,6 +43,9 @@ const ICONS: Record<string, string> = {
   check: "M20 6 9 17l-5-5",
   eye: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   refresh: "M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5",
+  wa: "M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.4A8.5 8.5 0 1 1 21 11.5zM9.5 9.8c.2 2.9 1.9 4.6 4.7 4.9l.9-1.4-1.9-1-.8.5c-.7-.5-1.3-1.1-1.7-1.8l.5-.8-1-1.9-1.6.5c-.1.3 0 .7.9 1z",
+  shield: "M12 2l8 3.5v5.6c0 4.9-3.4 8.6-8 10.9-4.6-2.3-8-6-8-10.9V5.5L12 2zM8.5 12l2.4 2.4 4.6-4.8",
+  gauge: "M4.5 19a9 9 0 1 1 15 0M12 13.5 16 9M12 15.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
 };
 
 export function Icon({ name, className }: { name: keyof typeof ICONS | string; className?: string }) {
@@ -80,6 +83,7 @@ export function Sidebar({
   mobileOpen,
   closeMobile,
   syncLabel,
+  extCount,
 }: {
   section: SectionId;
   setSection: (s: SectionId) => void;
@@ -89,6 +93,7 @@ export function Sidebar({
   mobileOpen: boolean;
   closeMobile: () => void;
   syncLabel?: string | null;
+  extCount?: number;
 }) {
   const cloud = settings.mode === "cloud";
   const motorLabel = cloud ? `Groq · ${settings.groqModel === "llama3-8b-8192" ? "llama3-8b" : "mixtral-8x7b"}` : `Ollama · ${settings.ollamaModel}`;
@@ -177,6 +182,14 @@ export function Sidebar({
             <div className="mt-3 flex items-center gap-2 rounded-md border border-pine-3/70 px-3 py-2">
               <Icon name="cloud" className="h-3.5 w-3.5 shrink-0 text-[#7ee2b4]" />
               <p className="truncate font-mono text-[10px] font-semibold uppercase tracking-wide text-paper/70">{syncLabel}</p>
+            </div>
+          )}
+          {(extCount ?? 0) > 0 && (
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-pine-3/70 px-3 py-2">
+              <Icon name="gauge" className="h-3.5 w-3.5 shrink-0 text-[#ecc06a]" />
+              <p className="truncate font-mono text-[10px] font-semibold uppercase tracking-wide text-paper/70">
+                {extCount} extensión{extCount === 1 ? "" : "es"} activas
+              </p>
             </div>
           )}
         </div>

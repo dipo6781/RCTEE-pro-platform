@@ -272,7 +272,7 @@ export default function App() {
       case "enterprise":
         return <Enterprise onSave={savePrompt} notify={notify} />;
       case "plantillas":
-        return <Templates onSave={savePrompt} notify={notify} />;
+        return <Templates onSave={savePrompt} notify={notify} settings={settings} />;
       case "rentables":
         return <Rentables onUse={applyNicho} />;
       case "mercado":
@@ -316,6 +316,7 @@ export default function App() {
         mobileOpen={mobileNav}
         closeMobile={() => setMobileNav(false)}
         syncLabel={syncLabel}
+        extCount={(settings.extensions ?? []).length}
       />
 
       <div className="lg:pl-[248px]">

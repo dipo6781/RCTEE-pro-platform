@@ -5,7 +5,7 @@
    Cero valores hardcodeados · todas las llamadas con try/catch y validación.
    ──────────────────────────────────────────────────────────────────────────── */
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HistoryItem } from "./engine";
 
 export interface SbConfig {
@@ -42,25 +42,33 @@ alter table ${SB_TABLE} enable row level security;
 create policy "rctee_acceso_anon" on ${SB_TABLE}
   for all using (true) with check (true);`;
 
-/* ── Cliente diferido (singleton por combinación de credenciales) ──────────── */
+/* ── Cliente diferido: el SDK se descarga como chunk solo cuando se usa ────── */
 
 let client: SupabaseClient | null = null;
 let clientSig = "";
+let loading: Promise<SupabaseClient | null> | null = null;
 
-export function getSbClient(cfg: SbConfig): SupabaseClient | null {
+export async function loadSbClient(cfg: SbConfig): Promise<SupabaseClient | null> {
   const url = cfg.url.trim();
   const key = cfg.key.trim();
   if (url.length < 8 || key.length < 8) return null;
   const sig = `${url}|${key}`;
-  if (!client || clientSig !== sig) {
+  if (client && clientSig === sig) return client;
+  if (loading) return loading;
+  loading = (async () => {
     try {
+      const { createClient } = await import("@supabase/supabase-js");
       client = createClient(url, key);
       clientSig = sig;
+      return client;
     } catch {
+      client = null;
       return null;
+    } finally {
+      loading = null;
     }
-  }
-  return client;
+  })();
+  return loading;
 }
 
 export function sbConfigured(cfg: SbConfig): boolean {
@@ -114,7 +122,7 @@ function itemToRow(i: HistoryItem): SbRow {
 
 export async function sbTest(cfg: SbConfig): Promise<SbResult<number>> {
   try {
-    const c = getSbClient(cfg);
+    const c = await loadSbClient(cfg);
     if (!c) return { ok: false, error: "Faltan URL o clave anónima (mínimo 8 caracteres cada una)" };
     const { data, error, count } = await c.from(SB_TABLE).select("id", { count: "exact", head: true });
     if (error) return { ok: false, error: error.message };
@@ -127,7 +135,7 @@ export async function sbTest(cfg: SbConfig): Promise<SbResult<number>> {
 
 export async function sbPull(cfg: SbConfig): Promise<SbResult<HistoryItem[]>> {
   try {
-    const c = getSbClient(cfg);
+    const c = await loadSbClient(cfg);
     if (!c) return { ok: false, error: "Supabase no configurado" };
     const { data, error } = await c.from(SB_TABLE).select("*").order("ts", { ascending: false }).limit(200);
     if (error) return { ok: false, error: error.message };
@@ -141,7 +149,7 @@ export async function sbPull(cfg: SbConfig): Promise<SbResult<HistoryItem[]>> {
 
 export async function sbPush(cfg: SbConfig, items: HistoryItem[]): Promise<SbResult<number>> {
   try {
-    const c = getSbClient(cfg);
+    const c = await loadSbClient(cfg);
     if (!c) return { ok: false, error: "Supabase no configurado" };
     if (items.length === 0) return { ok: true, data: 0 };
     const rows = items.map(itemToRow);

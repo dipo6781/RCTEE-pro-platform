@@ -4,12 +4,20 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useMemo, useState } from "react";
-import { TEMAS, type Plantilla } from "../data";
-import { buildPrompt, celebrate, delay, download, extractVariables, interpolateCampos, uid, varLabel, type HistoryItem } from "../engine";
+import { EXTENSIONES, TEMAS, type Plantilla } from "../data";
+import { buildPrompt, celebrate, delay, download, extractVariables, interpolateCampos, uid, varLabel, type HistoryItem, type Settings } from "../engine";
 import { Icon, ViewHeader } from "../chrome";
 import { CopyBtn, Meter, Reveal, Spinner } from "../ui";
 
-export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem) => void; notify: (m: string, k?: "ok" | "warn" | "err") => void }) {
+export default function Templates({
+  onSave,
+  notify,
+  settings,
+}: {
+  onSave: (i: HistoryItem) => void;
+  notify: (m: string, k?: "ok" | "warn" | "err") => void;
+  settings: Settings;
+}) {
   const [temaId, setTemaId] = useState(TEMAS[0].id);
   const [subId, setSubId] = useState(TEMAS[0].subtemas[0].id);
   const [tpl, setTpl] = useState<Plantilla | null>(null);
@@ -17,11 +25,29 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
   const [generating, setGenerating] = useState(false);
   const [output, setOutput] = useState<{ texto: string; score: number } | null>(null);
 
-  const tema = TEMAS.find((t) => t.id === temaId) ?? TEMAS[0];
+  /* ── Extensiones activas inyectadas sobre el catálogo base ── */
+  const activas = useMemo(
+    () => (settings.extensions ?? []).map((id) => EXTENSIONES.find((e) => e.id === id)).filter((e): e is (typeof EXTENSIONES)[number] => Boolean(e)),
+    [settings.extensions]
+  );
+  const temas = useMemo(() => {
+    if (activas.length === 0) return TEMAS;
+    return TEMAS.map((t) => {
+      const extras = activas.filter((e) => e.temaDestino === t.id).map((e) => e.subtema);
+      return extras.length > 0 ? { ...t, subtemas: [...t.subtemas, ...extras] } : t;
+    });
+  }, [activas]);
+  const extPorSubtema = useMemo(() => {
+    const m = new Map<string, (typeof EXTENSIONES)[number]>();
+    activas.forEach((e) => m.set(e.subtema.id, e));
+    return m;
+  }, [activas]);
+
+  const tema = temas.find((t) => t.id === temaId) ?? temas[0];
   const subtema = tema.subtemas.find((s) => s.id === subId) ?? tema.subtemas[0];
 
   const elegirTema = (id: string) => {
-    const t = TEMAS.find((x) => x.id === id) ?? TEMAS[0];
+    const t = temas.find((x) => x.id === id) ?? temas[0];
     setTemaId(id);
     setSubId(t.subtemas[0].id);
     setTpl(null);
@@ -81,6 +107,22 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
         desc="Elige un tema, drill-down al subtema y selecciona una plantilla. Las {variables} se convierten en un formulario dinámico; el prompt se previsualiza en vivo."
       />
 
+      {activas.length > 0 && (
+        <div className="anim-pop mb-5 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-mist">Extensiones activas</span>
+          {activas.map((e) => (
+            <span
+              key={e.id}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-bold"
+              style={{ borderColor: `${e.hex}55`, backgroundColor: `${e.hex}14`, color: e.hex }}
+            >
+              <Icon name={e.icono} className="h-3.5 w-3.5" />
+              {e.nombre} <span className="opacity-60">v{e.version}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* ── Drill-down de 3 niveles ── */}
       <Reveal>
         <div className="grid gap-4 lg:grid-cols-3">
@@ -88,7 +130,7 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
           <div className="panel overflow-hidden">
             <p className="border-b border-line bg-paper/70 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-mist">1 · Temas</p>
             <div className="max-h-[340px] overflow-y-auto p-2">
-              {TEMAS.map((t) => {
+              {temas.map((t) => {
                 const count = t.subtemas.reduce((a, s) => a + s.plantillas.length, 0);
                 const active = t.id === temaId;
                 return (
@@ -120,6 +162,7 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
             <div className="max-h-[340px] overflow-y-auto p-2">
               {tema.subtemas.map((s) => {
                 const active = s.id === subtema.id;
+                const ext = extPorSubtema.get(s.id);
                 return (
                   <button
                     key={s.id}
@@ -128,7 +171,17 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
                   >
                     <span className={`h-2 w-2 shrink-0 rounded-full ${active ? "bg-jade" : "bg-line-2"}`} />
                     <span className="min-w-0 flex-1">
-                      <span className={`block font-display text-[14px] font-bold ${active ? "text-jade" : "text-ink"}`}>{s.nombre}</span>
+                      <span className="flex items-center gap-2">
+                        <span className={`truncate font-display text-[14px] font-bold ${active ? "text-jade" : "text-ink"}`}>{s.nombre}</span>
+                        {ext && (
+                          <span
+                            className="shrink-0 rounded px-1.5 py-0.5 font-mono text-[8.5px] font-bold uppercase tracking-wide text-surface"
+                            style={{ backgroundColor: ext.hex }}
+                          >
+                            ext
+                          </span>
+                        )}
+                      </span>
                       <span className="block text-[11px] text-mist">{s.plantillas.length} plantillas disponibles</span>
                     </span>
                     <Icon name="arrow" className={`h-4 w-4 ${active ? "text-jade" : "text-line-2"}`} />
@@ -145,13 +198,21 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
               {subtema.plantillas.map((p) => {
                 const active = tpl?.id === p.id;
                 const pvars = extractVariables(p.campos);
+                const extOrigen = extPorSubtema.get(subtema.id);
                 return (
                   <button
                     key={p.id}
                     onClick={() => elegirTpl(p)}
                     className={`press mb-1.5 block w-full rounded-md border px-3.5 py-3 text-left transition-all ${active ? "border-jade bg-jade/5 shadow-[0_6px_18px_-10px_rgba(15,122,85,0.6)]" : "border-line hover:border-line-2 hover:bg-line/30"}`}
                   >
-                    <span className={`block font-display text-[13.5px] font-bold ${active ? "text-jade" : "text-ink"}`}>{p.nombre}</span>
+                    <span className="flex items-center gap-2">
+                      <span className={`truncate font-display text-[13.5px] font-bold ${active ? "text-jade" : "text-ink"}`}>{p.nombre}</span>
+                      {extOrigen && (
+                        <span className="ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[8.5px] font-bold uppercase tracking-wide text-surface" style={{ backgroundColor: extOrigen.hex }}>
+                          <Icon name={extOrigen.icono} className="h-2.5 w-2.5" /> {extOrigen.nombre}
+                        </span>
+                      )}
+                    </span>
                     <span className="mt-0.5 block text-[11.5px] leading-snug text-mist">{p.desc}</span>
                     <span className="mt-2 flex flex-wrap gap-1">
                       {pvars.map((v) => (

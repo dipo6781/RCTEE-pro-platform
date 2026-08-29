@@ -3,7 +3,7 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useRef, useState } from "react";
-import { METODOLOGIA, TEMAS, TICKER, VERSION, type SectionId } from "../data";
+import { EXTENSIONES, METODOLOGIA, TEMAS, TICKER, VERSION, type SectionId } from "../data";
 import { pingOllama, timeAgo, type HistoryItem, type Settings } from "../engine";
 import { Icon, Ticker } from "../chrome";
 import { CountUp, Eyebrow, LetterChip, Meter, Reveal } from "../ui";
@@ -171,6 +171,15 @@ function SystemStatus({ settings, history, sync }: { settings: Settings; history
             : "Sin configurar · Ajustes → Supabase",
       state: sync.enabled && sync.configured ? (sync.unsynced > 0 ? "warn" : "ok") : "warn",
     },
+    (() => {
+      const activas = (settings.extensions ?? []).filter((id) => EXTENSIONES.some((e) => e.id === id));
+      const extras = EXTENSIONES.filter((e) => activas.includes(e.id)).reduce((a, e) => a + e.subtema.plantillas.length, 0);
+      return {
+        label: "Extensiones",
+        value: activas.length > 0 ? `${activas.length} activas · +${extras} plantillas en catálogo` : "Ninguna activa · instálalas en Ajustes",
+        state: (activas.length > 0 ? "ok" : "warn") as "ok" | "warn",
+      };
+    })(),
   ] as const;
 
   return (
@@ -205,7 +214,11 @@ export default function Dashboard({
   goto: (s: SectionId) => void;
   sync: SyncState;
 }) {
-  const totalPlantillas = TEMAS.reduce((a, t) => a + t.subtemas.reduce((b, s) => b + s.plantillas.length, 0), 0);
+  const extActivas = EXTENSIONES.filter((e) => (settings.extensions ?? []).includes(e.id));
+  const totalPlantillas =
+    TEMAS.reduce((a, t) => a + t.subtemas.reduce((b, s) => b + s.plantillas.length, 0), 0) +
+    extActivas.reduce((a, e) => a + e.subtema.plantillas.length, 0);
+  const totalSubtemas = TEMAS.reduce((a, t) => a + t.subtemas.length, 0) + extActivas.length;
   const recientes = history.slice(0, 3);
 
   /* tendencia de scores (cronológica, últimos 12 con score) */
@@ -286,7 +299,7 @@ export default function Dashboard({
         <section className="panel grid grid-cols-2 divide-line max-lg:[&>*:nth-child(-n+2)]:border-b lg:grid-cols-4 lg:divide-x">
           {[
             { v: history.length, label: "Prompts en historial", sub: "persistencia local activa" },
-            { v: totalPlantillas, label: "Plantillas por sector", sub: `${TEMAS.length} temas · ${TEMAS.reduce((a, t) => a + t.subtemas.length, 0)} subtemas` },
+            { v: totalPlantillas, label: "Plantillas por sector", sub: `${TEMAS.length} temas · ${totalSubtemas} subtemas${extActivas.length > 0 ? ` · ${extActivas.length} ext.` : ""}` },
             { v: 8, label: "Personalidades IA", sub: "chatbot especializado" },
             { v: settings.mode === "cloud" ? 12 : 20, label: settings.mode === "cloud" ? "s · latencia Groq" : "s timeout Ollama", sub: settings.mode === "cloud" ? "modo cloud activo" : "modo local activo" },
           ].map((s, i) => (
