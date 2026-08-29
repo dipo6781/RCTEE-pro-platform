@@ -4,7 +4,7 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 import { useCallback, useEffect, useState } from "react";
-import type { SectionId } from "./data";
+import { NAV, type SectionId } from "./data";
 import {
   DEFAULT_SETTINGS,
   download,
@@ -52,6 +52,22 @@ export default function App() {
   useEffect(() => saveLS(LS.settings, settings), [settings]);
   useEffect(() => saveLS(LS.history, history), [history]);
   useEffect(() => saveLS(LS.chat, chat.slice(-60)), [chat]);
+
+  /* ── Atajos de teclado: 1–8 navegan entre módulos ── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const idx = ["1", "2", "3", "4", "5", "6", "7", "8"].indexOf(e.key);
+      if (idx >= 0 && NAV[idx]) {
+        setSection(NAV[idx].id);
+        if (NAV[idx].id !== "clasico") setPrefill(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   /* ── Notificaciones ── */
   const notify = useCallback((msg: string, kind: Toast["kind"] = "ok") => {
@@ -172,6 +188,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      {/* grano de película · capa ambiental superior */}
+      <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[85] opacity-[0.05] mix-blend-multiply" />
       <Sidebar
         section={section}
         setSection={(s) => {

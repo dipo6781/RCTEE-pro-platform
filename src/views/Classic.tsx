@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { FORMATOS, METODOLOGIA, type CamposRCTEE, type FormatoId } from "../data";
 import {
   buildPrompt,
+  celebrate,
   delay,
   download,
   qualityScore,
@@ -86,7 +87,13 @@ export default function Classic({
       meta: [toggles.cot && "CoT", toggles.autoverif && "auto-verif", toggles.neg && "neg"].filter(Boolean).join(" · ") || undefined,
     });
     setGenerating(false);
-    notify(`Prompt ensamblado · score ${score}/100 · guardado en historial`, "ok");
+    if (score >= 85) celebrate();
+    notify(
+      score >= 85
+        ? `Nivel Enterprise alcanzado · score ${score}/100`
+        : `Prompt ensamblado · score ${score}/100 · guardado en historial`,
+      "ok"
+    );
   };
 
   const limpiar = () => {

@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { TEMAS, type Plantilla } from "../data";
-import { buildPrompt, delay, download, extractVariables, interpolateCampos, uid, varLabel, type HistoryItem } from "../engine";
+import { buildPrompt, celebrate, delay, download, extractVariables, interpolateCampos, uid, varLabel, type HistoryItem } from "../engine";
 import { Icon, ViewHeader } from "../chrome";
 import { CopyBtn, Meter, Reveal, Spinner } from "../ui";
 
@@ -69,6 +69,7 @@ export default function Templates({ onSave, notify }: { onSave: (i: HistoryItem)
       meta: `${tema.nombre} → ${subtema.nombre}`,
     });
     setGenerating(false);
+    if (score >= 85) celebrate();
     notify(`Plantilla «${tpl.nombre}» generada · score ${score}/100`, "ok");
   };
 

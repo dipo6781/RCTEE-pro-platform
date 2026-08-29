@@ -186,6 +186,17 @@ export default function Dashboard({
   const totalPlantillas = TEMAS.reduce((a, t) => a + t.subtemas.reduce((b, s) => b + s.plantillas.length, 0), 0);
   const recientes = history.slice(0, 3);
 
+  /* tendencia de scores (cronológica, últimos 12 con score) */
+  const scores = history
+    .filter((h) => typeof h.score === "number")
+    .map((h) => Math.min(100, Math.max(40, h.score as number)))
+    .slice(0, 12)
+    .reverse();
+  const sparkPts =
+    scores.length >= 2
+      ? scores.map((s, i) => `${((i / (scores.length - 1)) * 112 + 4).toFixed(1)},${(29 - ((s - 40) / 60) * 24).toFixed(1)}`).join(" ")
+      : "";
+
   return (
     <div className="space-y-10">
       {/* ── Cubierta de mando ── */}
@@ -272,9 +283,22 @@ export default function Dashboard({
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <Reveal>
           <div className="panel h-full p-6">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-4">
               <h3 className="font-display text-lg font-extrabold text-ink">Reanudar trabajo</h3>
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist">{history.length} totales</span>
+              {scores.length >= 2 ? (
+                <span className="flex items-center gap-2.5" title="Tendencia de los últimos scores">
+                  <svg viewBox="0 0 120 32" className="h-8 w-[110px]">
+                    <polyline points={sparkPts} fill="none" stroke="#0f7a55" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    {(() => {
+                      const last = sparkPts.split(" ").pop()?.split(",");
+                      return last ? <circle cx={last[0]} cy={last[1]} r="3" fill="#e4572e" /> : null;
+                    })()}
+                  </svg>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist">tendencia</span>
+                </span>
+              ) : (
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist">{history.length} totales</span>
+              )}
             </div>
             {recientes.length === 0 ? (
               <div className="rounded-lg border border-dashed border-line-2 px-6 py-10 text-center">

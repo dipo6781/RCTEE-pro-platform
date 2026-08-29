@@ -215,6 +215,9 @@ export function TopBar({
           <h1 className="truncate font-display text-lg font-extrabold tracking-tight text-ink sm:text-xl">{meta?.label}</h1>
         </div>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <span className="hidden items-center gap-1.5 font-mono text-[10px] font-semibold text-mist/80 xl:flex">
+            <kbd>1</kbd>–<kbd>8</kbd> módulos
+          </span>
           <span className="hidden font-mono text-xs font-medium tabular-nums text-mist md:block">
             {now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </span>

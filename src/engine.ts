@@ -142,6 +142,29 @@ export const LS = {
 
 export const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/* ── Feedback de celebración (score nivel Enterprise) ──────────────────────── */
+
+export async function celebrate(): Promise<void> {
+  try {
+    const mod = await import("canvas-confetti");
+    const confetti = mod.default;
+    confetti({
+      particleCount: 130,
+      spread: 82,
+      startVelocity: 38,
+      origin: { y: 0.55 },
+      colors: ["#0f7a55", "#e4572e", "#d99125", "#2e5eaa", "#b23a6b", "#fbfcf7"],
+      disableForReducedMotion: true,
+      zIndex: 90,
+    });
+    setTimeout(() => {
+      confetti({ particleCount: 60, spread: 100, startVelocity: 30, origin: { y: 0.6 }, colors: ["#0f7a55", "#d99125", "#fbfcf7"], disableForReducedMotion: true, zIndex: 90 });
+    }, 180);
+  } catch {
+    /* animación opcional */
+  }
+}
+
 /* ── Variables dinámicas de plantillas ─────────────────────────────────────── */
 
 const VAR_RE = /\{([a-zA-Z0-9_]+)\}/g;
