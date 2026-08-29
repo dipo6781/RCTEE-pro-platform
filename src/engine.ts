@@ -40,6 +40,8 @@ export interface HistoryItem {
   score?: number;
   meta?: string;
   synced?: boolean;
+  /** Bloques originales editables: permiten recargar el prompt en el generador */
+  bloques?: CamposRCTEE;
 }
 
 export interface ChatMsg {
@@ -291,6 +293,43 @@ export function buildPrompt(campos: CamposRCTEE, formato: FormatoId, toggles: To
       directrices.forEach((d, i) => partes.push(`${i + 1}. ${d}`));
     }
     return partes.join("\n");
+  }
+
+  if (formato === "lista") {
+    const bloques: [string, string][] = [
+      ["ROL", campos.rol.trim()],
+      ["CONTEXTO", campos.contexto.trim()],
+      ["TAREA", campos.tarea.trim()],
+      ["ESPECIFICACIONES", campos.especificaciones.trim()],
+      ["EJEMPLOS", campos.ejemplos.trim()],
+    ];
+    const lineas = [`PROMPT EMPRESARIAL — ${tituloFinal}`, `Metodología R-C-T-E-E v${VERSION} · ${fecha}`, ""];
+    bloques.forEach(([k, v], i) => {
+      lineas.push(`${i + 1}. ${k}: ${v}`, "");
+    });
+    directrices.forEach((d, i) => lineas.push(`${bloques.length + i + 1}. DIRECTRIZ DE RAZONAMIENTO: ${d}`));
+    return lineas.join("\n").trimEnd();
+  }
+
+  if (formato === "tabla") {
+    const esc = (s: string) => s.trim().replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+    const filas: [string, string][] = [
+      ["R · Rol", campos.rol],
+      ["C · Contexto", campos.contexto],
+      ["T · Tarea", campos.tarea],
+      ["E · Especificaciones", campos.especificaciones],
+      ["E² · Ejemplos", campos.ejemplos],
+    ];
+    if (directrices.length > 0) filas.push(["Directrices de razonamiento", directrices.join(" · ")]);
+    return [
+      `# ${tituloFinal}`,
+      "",
+      `> R-C-T-E-E v${VERSION} · ${fecha}`,
+      "",
+      "| Bloque | Contenido |",
+      "| --- | --- |",
+      ...filas.map(([k, v]) => `| ${k} | ${esc(v)} |`),
+    ].join("\n");
   }
 
   const md: string[] = [

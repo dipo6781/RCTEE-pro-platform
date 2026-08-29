@@ -99,6 +99,8 @@ export const FORMATOS = [
   { id: "markdown", label: "Markdown" },
   { id: "json", label: "JSON" },
   { id: "texto", label: "Texto plano" },
+  { id: "lista", label: "Lista" },
+  { id: "tabla", label: "Tabla" },
 ] as const;
 export type FormatoId = (typeof FORMATOS)[number]["id"];
 

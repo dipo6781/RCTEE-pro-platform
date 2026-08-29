@@ -85,6 +85,7 @@ export default function Classic({
       prompt: texto,
       formato,
       score,
+      bloques: campos,
       meta: [toggles.cot && "CoT", toggles.autoverif && "auto-verif", toggles.neg && "neg"].filter(Boolean).join(" · ") || undefined,
     });
     setGenerating(false);

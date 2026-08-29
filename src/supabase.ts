@@ -34,7 +34,7 @@ create table if not exists ${SB_TABLE} (
   titulo  text    not null check (char_length(titulo) between 1 and 200),
   prompt  text    not null check (char_length(prompt) between 1 and 100000),
   formato text    not null default 'markdown'
-          check (formato in ('markdown','json','texto')),
+          check (formato in ('markdown','json','texto','lista','tabla')),
   score   integer check (score is null or (score between 0 and 100)),
   meta    text    check (meta is null or char_length(meta) <= 500)
 );
@@ -70,7 +70,7 @@ create table if not exists ${SB_TABLE} (
   titulo  text    not null check (char_length(titulo) between 1 and 200),
   prompt  text    not null check (char_length(prompt) between 1 and 100000),
   formato text    not null default 'markdown'
-          check (formato in ('markdown','json','texto')),
+          check (formato in ('markdown','json','texto','lista','tabla')),
   score   integer check (score is null or (score between 0 and 100)),
   meta    text    check (meta is null or char_length(meta) <= 500)
 );
@@ -147,6 +147,14 @@ export function sbConfigured(cfg: SbConfig): boolean {
   return cfg.url.trim().length > 8 && cfg.key.trim().length > 8;
 }
 
+/* ── Migración: si la tabla ya existe con el constraint antiguo (3 formatos) ─ */
+
+export const SQL_MIGRATE = `-- Solo si ya creaste ${SB_TABLE} con el esquema anterior:
+-- amplía el constraint de formato sin recrear la tabla (conserva los datos).
+alter table ${SB_TABLE} drop constraint if exists ${SB_TABLE}_formato_check;
+alter table ${SB_TABLE} add constraint ${SB_TABLE}_formato_check
+  check (formato in ('markdown','json','texto','lista','tabla'));`;
+
 /* ── Mapeo seguro de filas remotas → HistoryItem ───────────────────────────── */
 
 interface SbRow {
@@ -163,7 +171,8 @@ interface SbRow {
 function rowToItem(r: SbRow): HistoryItem | null {
   if (typeof r.id !== "string" || typeof r.prompt !== "string" || typeof r.titulo !== "string") return null;
   const fuente = r.fuente === "enterprise" || r.fuente === "plantilla" ? r.fuente : "clasico";
-  const formato = r.formato === "json" || r.formato === "texto" ? r.formato : "markdown";
+  const formato =
+    r.formato === "json" || r.formato === "texto" || r.formato === "lista" || r.formato === "tabla" ? r.formato : "markdown";
   return {
     id: r.id,
     ts: typeof r.ts === "number" && r.ts > 0 ? r.ts : Date.now(),

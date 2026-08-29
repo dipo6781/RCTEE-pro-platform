@@ -92,6 +92,7 @@ export default function Templates({
       prompt: texto,
       formato: "markdown",
       score,
+      bloques: interpolateCampos(tpl.campos, values),
       meta: `${tema.nombre} → ${subtema.nombre}`,
     });
     setGenerating(false);

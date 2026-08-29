@@ -296,6 +296,7 @@ export function HistoryDrawer({
   onClearAll: () => void;
   onExportAll: () => void;
   onImport: (file: File) => void;
+  onReload: (item: HistoryItem) => void;
   notify: (msg: string, kind?: "ok" | "warn" | "err") => void;
 }) {
   const [filter, setFilter] = useState<"todos" | Fuente>("todos");
