@@ -1,0 +1,16 @@
+{
+  "name": "R-C-T-E-E Pro — Consola de Prompts Empresariales",
+  "short_name": "R-C-T-E-E Pro",
+  "description": "Plataforma SaaS para generar, validar y ejecutar prompts de nivel empresarial con la metodología Rol–Contexto–Tarea–Especificaciones–Ejemplos.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f2f3ec",
+  "theme_color": "#14201a",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
