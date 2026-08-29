@@ -3,19 +3,22 @@
    Navegación por módulos, estado global, persistencia y notificaciones.
    ──────────────────────────────────────────────────────────────────────────── */
 
-import { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { NAV, type SectionId } from "./data";
 import {
   DEFAULT_SETTINGS,
   download,
   loadLS,
   LS,
+  mergeHistories,
   saveLS,
+  timeAgo,
   uid,
   type ChatMsg,
   type HistoryItem,
   type Settings,
 } from "./engine";
+import { sbConfigured, sbPull, sbPush } from "./supabase";
 import { HistoryDrawer, Icon, Sidebar, TopBar } from "./chrome";
 import type { CamposRCTEE, Nicho } from "./data";
 
@@ -62,7 +65,15 @@ const TOAST_STYLE: Record<Toast["kind"], { border: string; bg: string; text: str
 
 export default function App() {
   const [section, setSection] = useState<SectionId>("dashboard");
-  const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...loadLS<Partial<Settings>>(LS.settings, {}) }));
+  const [settings, setSettings] = useState<Settings>(() => {
+    const stored = loadLS<Partial<Settings>>(LS.settings, {});
+    return {
+      ...DEFAULT_SETTINGS,
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? "",
+      supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? "",
+      ...stored,
+    };
+  });
   const [history, setHistory] = useState<HistoryItem[]>(() => loadLS<HistoryItem[]>(LS.history, []));
   const [chat, setChat] = useState<ChatMsg[]>(() => loadLS<ChatMsg[]>(LS.chat, []));
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -102,6 +113,77 @@ export default function App() {
   const savePrompt = useCallback((item: HistoryItem) => {
     setHistory((h) => [item, ...h].slice(0, 100));
   }, []);
+
+  /* ── Sincronización Supabase ── */
+  const sbCfg = { url: settings.supabaseUrl, key: settings.supabaseKey };
+  const sbReady = settings.syncEnabled && sbConfigured(sbCfg);
+  const unsynced = history.filter((h) => !h.synced).length;
+
+  const pushNow = useCallback(
+    async (manual: boolean) => {
+      if (!settings.syncEnabled || !sbConfigured(sbCfg)) {
+        if (manual) notify("Configura y activa Supabase en Ajustes antes de sincronizar", "warn");
+        return;
+      }
+      const pendientes = history.filter((h) => !h.synced);
+      if (pendientes.length === 0) {
+        if (manual) notify("Nada pendiente: el historial ya está sincronizado", "ok");
+        return;
+      }
+      const res = await sbPush(sbCfg, pendientes);
+      if (res.ok) {
+        const ids = new Set(pendientes.map((p) => p.id));
+        setHistory((h) => h.map((i) => (ids.has(i.id) ? { ...i, synced: true } : i)));
+        setSettings((s) => ({ ...s, lastSync: Date.now() }));
+        if (manual) notify(`${res.data ?? 0} prompts subidos a Supabase`, "ok");
+      } else if (manual) {
+        notify(`Fallo al subir: ${res.error ?? "error desconocido"}`, "err");
+      }
+    },
+    [settings, history, notify]
+  );
+
+  const pullNow = useCallback(
+    async (manual: boolean) => {
+      if (!settings.syncEnabled || !sbConfigured(sbCfg)) {
+        if (manual) notify("Configura y activa Supabase en Ajustes antes de sincronizar", "warn");
+        return;
+      }
+      const res = await sbPull(sbCfg);
+      if (res.ok && res.data) {
+        setHistory((h) => mergeHistories(h, res.data ?? []));
+        setSettings((s) => ({ ...s, lastSync: Date.now() }));
+        if (manual) notify(`${res.data.length} registros descargados y fusionados`, "ok");
+      } else if (manual) {
+        notify(`Fallo al descargar: ${res.error ?? "error desconocido"}`, "err");
+      }
+    },
+    [settings, notify]
+  );
+
+  /* Pull inicial al arrancar la consola */
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    if (sbReady) void pullNow(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Push automático con debounce de 2.5 s tras cada cambio del historial */
+  useEffect(() => {
+    if (!sbReady || unsynced === 0) return;
+    const t = setTimeout(() => void pushNow(false), 2500);
+    return () => clearTimeout(t);
+  }, [history, sbReady, unsynced, pushNow]);
+
+  const syncLabel = !sbReady
+    ? null
+    : unsynced > 0
+      ? `${unsynced} pend. de subida`
+      : settings.lastSync
+        ? `sync · ${timeAgo(settings.lastSync)}`
+        : "sync activo";
 
   const deleteItem = (id: string) => setHistory((h) => h.filter((i) => i.id !== id));
 
@@ -169,7 +251,14 @@ export default function App() {
   const view = () => {
     switch (section) {
       case "dashboard":
-        return <Dashboard history={history} settings={settings} goto={setSection} />;
+        return (
+          <Dashboard
+            history={history}
+            settings={settings}
+            goto={setSection}
+            sync={{ enabled: settings.syncEnabled, configured: sbConfigured(sbCfg), lastSync: settings.lastSync, unsynced }}
+          />
+        );
       case "clasico":
         return (
           <Classic
@@ -203,6 +292,9 @@ export default function App() {
               notify("Historial vaciado", "warn");
             }}
             notify={notify}
+            onPushNow={() => void pushNow(true)}
+            onPullNow={() => void pullNow(true)}
+            unsyncedCount={unsynced}
           />
         );
     }
@@ -223,6 +315,7 @@ export default function App() {
         openHistory={() => setHistoryOpen(true)}
         mobileOpen={mobileNav}
         closeMobile={() => setMobileNav(false)}
+        syncLabel={syncLabel}
       />
 
       <div className="lg:pl-[248px]">

@@ -121,7 +121,14 @@ function Anatomy() {
 
 /* ── Estado del sistema ────────────────────────────────────────────────────── */
 
-function SystemStatus({ settings, history }: { settings: Settings; history: HistoryItem[] }) {
+export interface SyncState {
+  enabled: boolean;
+  configured: boolean;
+  lastSync: number | null;
+  unsynced: number;
+}
+
+function SystemStatus({ settings, history, sync }: { settings: Settings; history: HistoryItem[]; sync: SyncState }) {
   const [ollama, setOllama] = useState<"checking" | "ok" | "off">("checking");
 
   useEffect(() => {
@@ -150,7 +157,20 @@ function SystemStatus({ settings, history }: { settings: Settings; history: Hist
       state: ollama === "checking" ? "warn" : ollama === "ok" ? "ok" : "off",
     },
     { label: "Persistencia", value: `localStorage · ${kb} KB usados`, state: "ok" },
-    { label: "Sincronización Supabase", value: "Programada en roadmap", state: "warn" },
+    {
+      label: "Sincronización Supabase",
+      value:
+        sync.enabled && sync.configured
+          ? sync.unsynced > 0
+            ? `${sync.unsynced} registro${sync.unsynced === 1 ? "" : "s"} pendiente${sync.unsynced === 1 ? "" : "s"} de subida`
+            : sync.lastSync
+              ? `Al día · última sync ${timeAgo(sync.lastSync)}`
+              : "Activa · sin registros remotos aún"
+          : sync.configured
+            ? "Desactivada · actívala en Ajustes"
+            : "Sin configurar · Ajustes → Supabase",
+      state: sync.enabled && sync.configured ? (sync.unsynced > 0 ? "warn" : "ok") : "warn",
+    },
   ] as const;
 
   return (
@@ -178,10 +198,12 @@ export default function Dashboard({
   history,
   settings,
   goto,
+  sync,
 }: {
   history: HistoryItem[];
   settings: Settings;
   goto: (s: SectionId) => void;
+  sync: SyncState;
 }) {
   const totalPlantillas = TEMAS.reduce((a, t) => a + t.subtemas.reduce((b, s) => b + s.plantillas.length, 0), 0);
   const recientes = history.slice(0, 3);
@@ -370,7 +392,7 @@ export default function Dashboard({
               <h3 className="font-display text-lg font-extrabold text-ink">Estado del sistema</h3>
               <Icon name="spark" className="h-4 w-4 text-honey" />
             </div>
-            <SystemStatus settings={settings} history={history} />
+            <SystemStatus settings={settings} history={history} sync={sync} />
             <div className="mt-5 rounded-md bg-pine px-4 py-3.5 text-paper">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-paper/50">Directriz de seguridad</p>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-paper/85">

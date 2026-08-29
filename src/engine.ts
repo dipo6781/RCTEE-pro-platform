@@ -21,6 +21,10 @@ export interface Settings {
   cot: boolean;
   autoverif: boolean;
   neg: boolean;
+  supabaseUrl: string;
+  supabaseKey: string;
+  syncEnabled: boolean;
+  lastSync: number | null;
 }
 
 export type Fuente = "clasico" | "enterprise" | "plantilla";
@@ -34,6 +38,7 @@ export interface HistoryItem {
   formato: FormatoId;
   score?: number;
   meta?: string;
+  synced?: boolean;
 }
 
 export interface ChatMsg {
@@ -55,7 +60,25 @@ export const DEFAULT_SETTINGS: Settings = {
   cot: true,
   autoverif: true,
   neg: false,
+  supabaseUrl: "",
+  supabaseKey: "",
+  syncEnabled: false,
+  lastSync: null,
 };
+
+/* ── Fusión de historiales local ↔ remoto (gana el registro más reciente) ──── */
+
+export function mergeHistories(local: HistoryItem[], remote: HistoryItem[]): HistoryItem[] {
+  const map = new Map<string, HistoryItem>();
+  for (const r of remote) map.set(r.id, { ...r, synced: true });
+  for (const l of local) {
+    const prev = map.get(l.id);
+    if (!prev || (l.ts ?? 0) >= (prev.ts ?? 0)) map.set(l.id, l);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 100);
+}
 
 /* ── Utilidades base ───────────────────────────────────────────────────────── */
 

@@ -79,6 +79,7 @@ export function Sidebar({
   openHistory,
   mobileOpen,
   closeMobile,
+  syncLabel,
 }: {
   section: SectionId;
   setSection: (s: SectionId) => void;
@@ -87,6 +88,7 @@ export function Sidebar({
   openHistory: () => void;
   mobileOpen: boolean;
   closeMobile: () => void;
+  syncLabel?: string | null;
 }) {
   const cloud = settings.mode === "cloud";
   const motorLabel = cloud ? `Groq · ${settings.groqModel === "llama3-8b-8192" ? "llama3-8b" : "mixtral-8x7b"}` : `Ollama · ${settings.ollamaModel}`;
@@ -171,6 +173,12 @@ export function Sidebar({
                 : "Sin API key: usando motor de respaldo."
               : "Ejecutando contra Ollama local."}
           </p>
+          {syncLabel && (
+            <div className="mt-3 flex items-center gap-2 rounded-md border border-pine-3/70 px-3 py-2">
+              <Icon name="cloud" className="h-3.5 w-3.5 shrink-0 text-[#7ee2b4]" />
+              <p className="truncate font-mono text-[10px] font-semibold uppercase tracking-wide text-paper/70">{syncLabel}</p>
+            </div>
+          )}
         </div>
       </aside>
     </>
